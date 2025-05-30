@@ -51,7 +51,7 @@ export default function ({id, spriteName, opcode, params, value, vm}) {
     // Turn the value to a string, to handle JSON values
     // do not convert arrays as it will be confused for lists
     if (typeof value === 'object' && !Array.isArray(value)) {
-        value = JSON.stringify(value, circularReplacer);
+        value = JSON.stringify(value, circularReplacer());
     }
 
     // Lists can contain booleans or Objects, which should also be turned to strings
@@ -62,7 +62,7 @@ export default function ({id, spriteName, opcode, params, value, vm}) {
             if (typeof item === 'boolean') {
                 value[i] = item.toString();
             } else if (typeof value[i] === 'object' && !Array.isArray(value[i])) {
-                value[i] = JSON.stringify(item, circularReplacer);
+                value[i] = JSON.stringify(item, circularReplacer());
             }
         }
     }
