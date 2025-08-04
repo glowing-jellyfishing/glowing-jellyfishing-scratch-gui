@@ -4,9 +4,9 @@ const isUndefined = a => typeof a === 'undefined';
 
 const circularReplacer = () => {
     const stack = new Set();
-    return function replacer(_, value) {
-        if (typeof value === "object" && value !== null) {
-            if (stack.has(value)) return Array.isArray(value) ? "[...]" : "{...}";
+    return (_, value) => {
+        if (typeof value === 'object' && value !== null) {
+            if (stack.has(value)) return Array.isArray(value) ? '[...]' : '{...}';
             stack.add(value);
         }
         return value;
