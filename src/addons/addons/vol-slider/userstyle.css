@@ -53,7 +53,7 @@
   background-color: #cf63cf;
 }
 
-/* TW: Hide mute-project icon. Upstream this is a conditional stylesheet in mute-project but we don't support those yet. */
+/* TW: Hide mute-project icon. Upstream this is a conditional stylesheet in mute-project but those don't work well for us. */
 .sa-mute-project-icon {
   display: none !important;
 }

@@ -49,7 +49,7 @@ import styles from './interface.css';
 
 if (window.parent !== window) {
     // eslint-disable-next-line no-alert
-    alert('This page is embedding TurboWarp in a way that is unsupported and will cease to function in the near future. Please read https://docs.turbowarp.org/embedding');
+    alert('This page contains an invalid TurboWarp embed. Please read https://docs.turbowarp.org/embedding for instructions to create a working embed.');
     throw new Error('Invalid embed');
 }
 
@@ -132,22 +132,22 @@ const Footer = () => (
                     <a href="https://docs.turbowarp.org/embedding">
                         <FormattedMessage
                             defaultMessage="Embedding"
-                            description="Menu bar item for embedding link"
+                            description="Link in footer to embedding documentation for embedding link"
                             id="tw.footer.embed"
                         />
                     </a>
                     <a href="https://docs.turbowarp.org/url-parameters">
                         <FormattedMessage
                             defaultMessage="URL Parameters"
-                            description="Menu bar item for URL parameters link"
+                            description="Link in footer to URL parameters documentation"
                             id="tw.footer.parameters"
                         />
                     </a>
-                    <a href="https://docs.turbowarp.org/translate">
+                    <a href="https://docs.turbowarp.org/">
                         <FormattedMessage
-                            defaultMessage="Help Translate TurboWarp"
-                            description="Menu bar item for translating TurboWarp link"
-                            id="tw.footer.translate"
+                            defaultMessage="Documentation"
+                            description="Link in footer to additional documentation"
+                            id="tw.footer.documentation"
                         />
                     </a>
                 </div>

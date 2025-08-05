@@ -27,7 +27,8 @@ import {addContextMenu} from './contextmenu';
 import * as modal from './modal';
 import * as textColorHelpers from './libraries/common/cs/text-color.esm.js';
 import './polyfill';
-import ConditionalStyle from './conditional-style';
+import * as conditionalStyles from './conditional-style';
+import getPrecedence from './addon-precedence';
 
 /* eslint-disable no-console */
 
@@ -168,7 +169,10 @@ const getTranslations = async () => {
 const addonMessagesPromise = getTranslations();
 
 const untilInEditor = () => {
-    if (!tabReduxInstance.state.scratchGui.mode.isPlayerOnly) {
+    if (
+        !tabReduxInstance.state.scratchGui.mode.isPlayerOnly ||
+        tabReduxInstance.state.scratchGui.mode.isEmbedded
+    ) {
         return;
     }
     return new Promise(resolve => {
@@ -502,7 +506,7 @@ class Tab extends EventTargetShim {
                 const oldUpdateColour = BlockSvg.prototype.updateColour;
                 BlockSvg.prototype.updateColour = function (...args2) {
                     // procedures_prototype also has a procedure code but we do not want to color them.
-                    if (this.type === 'procedures_call') {
+                    if (!this.isInsertionMarker() && this.type === 'procedures_call') {
                         const block = this.procCode_ && vm.runtime.getAddonBlock(this.procCode_);
                         if (block) {
                             this.colour_ = addonBlockColor.color;
@@ -748,7 +752,7 @@ class AddonRunner {
     }
 
     updateAllStyles () {
-        ConditionalStyle.updateAddon(this.id);
+        conditionalStyles.updateAll();
         this.updateCssVariables();
     }
 
@@ -780,6 +784,11 @@ class AddonRunner {
             return variable;
         }
         switch (variable.type) {
+        case 'alphaBlend': {
+            const opaqueSource = this.evaluateCustomCssVariable(variable.opaqueSource);
+            const transparentSource = this.evaluateCustomCssVariable(variable.transparentSource);
+            return textColorHelpers.alphaBlend(opaqueSource, transparentSource);
+        }
         case 'alphaThreshold': {
             const source = this.evaluateCustomCssVariable(variable.source);
             const alpha = textColorHelpers.parseHex(source).a;
@@ -788,6 +797,27 @@ class AddonRunner {
                 return this.evaluateCustomCssVariable(variable.opaque);
             }
             return this.evaluateCustomCssVariable(variable.transparent);
+        }
+        case 'brighten': {
+            const source = this.evaluateCustomCssVariable(variable.source);
+            return textColorHelpers.brighten(source, variable);
+        }
+        case 'makeHsv': {
+            const h = this.evaluateCustomCssVariable(variable.h);
+            const s = this.evaluateCustomCssVariable(variable.s);
+            const v = this.evaluateCustomCssVariable(variable.v);
+            return textColorHelpers.makeHsv(h, s, v);
+        }
+        case 'map': {
+            return variable.options[this.evaluateCustomCssVariable(variable.source)];
+        }
+        case 'multiply': {
+            const hex = this.evaluateCustomCssVariable(variable.source);
+            return textColorHelpers.multiply(hex, variable);
+        }
+        case 'recolorFilter': {
+            const source = this.evaluateCustomCssVariable(variable.source);
+            return textColorHelpers.recolorFilter(source);
         }
         case 'settingValue': {
             return this.publicAPI.addon.settings.get(variable.settingId);
@@ -799,31 +829,9 @@ class AddonRunner {
             const threshold = this.evaluateCustomCssVariable(variable.threshold);
             return textColorHelpers.textColor(hex, black, white, threshold);
         }
-        case 'multiply': {
-            const hex = this.evaluateCustomCssVariable(variable.source);
-            return textColorHelpers.multiply(hex, variable);
-        }
-        case 'map': {
-            return variable.options[this.evaluateCustomCssVariable(variable.source)];
-        }
         }
         console.warn(`Unknown customCssVariable`, variable);
         return '#000000';
-    }
-
-    meetsCondition (condition) {
-        if (!condition) {
-            // No condition, so always active.
-            return true;
-        }
-        if (condition.settings) {
-            for (const [settingId, expectedValue] of Object.entries(condition.settings)) {
-                if (this.publicAPI.addon.settings.get(settingId) !== expectedValue) {
-                    return false;
-                }
-            }
-        }
-        return true;
     }
 
     settingsChanged () {
@@ -867,7 +875,12 @@ class AddonRunner {
             await addonMessagesPromise;
         }
 
+        // Multiply by big number because the first userstyle is + 0, second is + 1, third is + 2, etc.
+        // This number just has to be larger than the maximum number of userstyles in a single addon.
+        const baseStylePrecedence = getPrecedence(this.id) * 100;
+
         if (this.manifest.userstyles) {
+
             for (const userstyle of this.manifest.userstyles) {
                 for (const [moduleId, cssText] of this.resources[userstyle.url]) {
                     const sheet = ConditionalStyle.get(moduleId, cssText);
@@ -875,19 +888,33 @@ class AddonRunner {
                         this.id,
                         () => !this.publicAPI.addon.self.disabled && this.meetsCondition(userstyle.if)
                     );
+
+            for (let i = 0; i < this.manifest.userstyles.length; i++) {
+                const userstyle = this.manifest.userstyles[i];
+                const userstylePrecedence = baseStylePrecedence + i;
+                const userstyleCondition = () => (
+                    !this.publicAPI.addon.self.disabled &&
+                    SettingsStore.evaluateCondition(this.id, userstyle.if)
+                );
+
+                for (const [moduleId, cssText] of this.resources[userstyle.url]) {
+                    const sheet = conditionalStyles.create(moduleId, cssText);
+                    sheet.addDependent(this.id, userstylePrecedence, userstyleCondition);
+
                 }
             }
+
         }
 
         const disabledCSS = `.${getDisplayNoneWhileDisabledClass(this.id)}{display:none !important;}`;
-        const disabledStylesheet = ConditionalStyle.get(`_disabled/${this.id}`, disabledCSS);
-        disabledStylesheet.addDependent(this.id, () => this.publicAPI.addon.self.disabled);
+        const disabledStylesheet = conditionalStyles.create(`_disabled/${this.id}`, disabledCSS);
+        disabledStylesheet.addDependent(this.id, baseStylePrecedence, () => this.publicAPI.addon.self.disabled);
 
         this.updateCssVariables();
 
         if (this.manifest.userscripts) {
             for (const userscript of this.manifest.userscripts) {
-                if (!this.meetsCondition(userscript.if)) {
+                if (!SettingsStore.evaluateCondition(userscript.if)) {
                     continue;
                 }
                 const fn = this.resources[userscript.url];

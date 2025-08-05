@@ -22,6 +22,7 @@ const addons = [
     'remove-sprite-confirm',
     'block-count',
     'onion-skinning',
+    'paint-snap',
     'default-costume-editor-color',
     'bitmap-copy',
     '2d-color-picker',
@@ -36,6 +37,7 @@ const addons = [
     'editor-buttons-reverse-order',
     'variable-manager',
     'search-sprites',
+    'sprite-properties',
     'gamepad',
     'editor-sounds',
     'folders',
@@ -67,14 +69,18 @@ const addons = [
     'tw-straighten-comments',
     'tw-remove-backpack',
     'tw-remove-feedback',
+    'tw-disable-cloud-variables',
     'tw-disable-compiler',
+    'tw-disable-restore-points',
     'editor-stepping'
 ];
 
 const newAddons = [
     'vol-slider',
     'number-pad',
-    'rename-broadcasts'
+    'rename-broadcasts',
+    'sprite-properties',
+    'paint-snap'
 ];
 
 // eslint-disable-next-line import/no-commonjs

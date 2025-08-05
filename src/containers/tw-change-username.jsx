@@ -22,11 +22,6 @@ class ChangeUsername extends React.Component {
         ]);
     }
     changeUsername () {
-        if (this.props.running) {
-            // eslint-disable-next-line no-alert
-            alert(this.props.intl.formatMessage(messages.cannotChangeWhileRunning));
-            return;
-        }
         this.props.onOpenUsernameModal();
     }
     render () {

@@ -74,13 +74,25 @@ export default async function ({ addon, console, msg }) {
     return ret;
   };
 
+  /*
+  if (addon.self.enabledLate) {
+    // Clone count might be inaccurate if the user deleted sprites
+    // before enabling the addon
+    let count = 0;
+    for (let target of vm.runtime.targets) {
+      if (!target.isOriginal) ++count;
+    }
+    vm.runtime._cloneCounter = count;
+  }
+  */
+
   while (true) {
     await addon.tab.waitForElement('[class*="controls_controls-container"]', {
       markAsSeen: true,
       reduxEvents: ["scratch-gui/mode/SET_PLAYER", "fontsLoaded/SET_FONTS_LOADED", "scratch-gui/locales/SELECT_LOCALE"],
     });
 
-    if (addon.tab.editorMode === "editor") {
+    if (addon.tab.editorMode === "editor" || addon.tab.redux.state.scratchGui.mode.isEmbedded) {
       addon.tab.appendToSharedSpace({ space: "afterStopButton", element: countContainerContainer, order: 2 });
     }
   }

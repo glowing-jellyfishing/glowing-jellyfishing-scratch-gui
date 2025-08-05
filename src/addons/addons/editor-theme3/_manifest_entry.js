@@ -45,7 +45,7 @@ const manifest = {
       }
     },
     {
-      "name": "inputColor-forumText",
+      "name": "inputColor-blackText",
       "value": {
         "type": "alphaThreshold",
         "source": {
@@ -112,7 +112,6 @@ const manifest = {
     }
   ],
   "dynamicDisable": true,
-  "updateUserstylesOnSettingsChange": true,
   "userscripts": [
     {
       "url": "theme3.js"

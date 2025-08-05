@@ -178,6 +178,7 @@ const normalizeManifest = (id, manifest) => {
     delete manifest.latestUpdate;
     delete manifest.libraries;
     delete manifest.injectAsStyleElt;
+    delete manifest.updateUserstylesOnSettingsChange;
 
     // All addons have dynamic enable
     delete manifest.dynamicEnable;
@@ -195,6 +196,14 @@ const normalizeManifest = (id, manifest) => {
     if (manifest.userstyles) {
         manifest.userstyles = filterUserscripts(manifest.userstyles);
     }
+
+    if (manifest.credits) {
+        for (const {link} of manifest.credits) {
+            if (link && !link.startsWith('https://scratch.mit.edu/')) {
+                console.warn(`Warning: ${id} contains unsafe credit link: ${link}`);
+            }
+        }
+    }
 };
 
 const generateManifestEntry = (id, manifest) => {
@@ -210,13 +219,17 @@ const generateManifestEntry = (id, manifest) => {
     }
     if (manifest.permissions && manifest.permissions.includes('clipboardWrite')) {
         result += 'import {clipboardSupported} from "../../environment";\n';
-        result += `if (!clipboardSupported) manifest.unsupported = true;\n`;
+        result += 'if (!clipboardSupported) manifest.unsupported = true;\n';
     }
     if (id === 'mediarecorder') {
         result += 'import {mediaRecorderSupported} from "../../environment";\n';
-        result += `if (!mediaRecorderSupported) manifest.unsupported = true;\n`;
+        result += 'if (!mediaRecorderSupported) manifest.unsupported = true;\n';
     }
-    result += `export default manifest;\n`;
+    if (id === 'tw-disable-cloud-variables') {
+        result += 'import {isScratchDesktop} from "../../../lib/isScratchDesktop";\n';
+        result += 'if (isScratchDesktop()) manifest.unsupported = true;\n';
+    }
+    result += 'export default manifest;\n';
     return result;
 };
 
@@ -308,7 +321,6 @@ const SKIP_MESSAGES = [
     'debugger/performance-framerate-graph-tooltip',
     'debugger/performance-clonecount-title',
     'debugger/performance-clonecount-graph-tooltip',
-    'editor-devtools/help-by',
     'editor-devtools/extension-description-not-for-addon',
     'mediarecorder/added-by',
     'editor-theme3/@settings-name-sa-color',
@@ -316,18 +328,22 @@ const SKIP_MESSAGES = [
     'block-switching/@settings-name-sa'
 ];
 
-const parseMessages = localePath => {
+const parseMessageDirectory = localeRoot => {
     const settings = {};
     const runtime = {};
+    const upstreamMessageIds = new Set();
+
     for (const addon of addons) {
-        const path = pathUtil.join(localePath, `${addon}.json`);
+        const path = pathUtil.join(localeRoot, `${addon}.json`);
         try {
             const contents = fs.readFileSync(path, 'utf-8');
             const parsed = JSON.parse(contents);
             for (const id of Object.keys(parsed).sort()) {
+                upstreamMessageIds.add(id);
                 if (SKIP_MESSAGES.includes(id)) {
                     continue;
                 }
+
                 const value = parsed[id];
                 if (id.includes('/@')) {
                     settings[id] = value;
@@ -336,12 +352,17 @@ const parseMessages = localePath => {
                 }
             }
         } catch (e) {
-            // Ignore
+            // Ignore errors caused by file not existing.
+            if (e.code !== 'ENOENT') {
+                throw e;
+            }
         }
     }
+
     return {
         settings,
-        runtime
+        runtime,
+        upstreamMessageIds
     };
 };
 
@@ -416,6 +437,7 @@ for (const addon of addons) {
 
 const l10nFiles = fs.readdirSync(pathUtil.resolve(__dirname, 'ScratchAddons', 'addons-l10n'));
 const languages = [];
+const allUpstreamMessageIds = new Set();
 for (const file of l10nFiles) {
     const oldDirectory = pathUtil.resolve(__dirname, 'ScratchAddons', 'addons-l10n', file);
     // Ignore README
@@ -427,10 +449,19 @@ for (const file of l10nFiles) {
     languages.push(fixedName);
     const runtimePath = pathUtil.resolve(__dirname, 'addons-l10n', `${fixedName}.json`);
     const settingsPath = pathUtil.resolve(__dirname, 'addons-l10n-settings', `${fixedName}.json`);
-    const {settings, runtime} = parseMessages(oldDirectory);
+    const {settings, runtime, upstreamMessageIds} = parseMessageDirectory(oldDirectory);
+    for (const id of upstreamMessageIds) {
+        allUpstreamMessageIds.add(id);
+    }
     fs.writeFileSync(runtimePath, JSON.stringify(runtime, null, 4));
     if (fixedName !== 'en') {
         fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 4));
+    }
+}
+
+for (const id of SKIP_MESSAGES) {
+    if (!allUpstreamMessageIds.has(id)) {
+        console.warn(`Warning: Translation ${id} is in SKIP_MESSAGES but does not exist`);
     }
 }
 

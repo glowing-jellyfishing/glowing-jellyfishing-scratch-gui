@@ -201,6 +201,7 @@ class MenuBar extends React.Component {
         bindAll(this, [
             'handleClickSeeInside',
             'handleClickNew',
+            'handleClickNewWindow',
             'handleClickRemix',
             'handleClickSave',
             'handleClickSaveAsCopy',
@@ -233,6 +234,10 @@ class MenuBar extends React.Component {
         if (readyToReplaceProject) {
             this.props.onClickNew(this.props.canSave && this.props.canCreateNew);
         }
+        this.props.onRequestCloseFile();
+    }
+    handleClickNewWindow () {
+        this.props.onClickNewWindow[1]();
         this.props.onRequestCloseFile();
     }
     handleClickRemix () {
@@ -280,7 +285,7 @@ class MenuBar extends React.Component {
     }
     handleKeyPress (event) {
         const modifier = bowser.mac ? event.metaKey : event.ctrlKey;
-        if (modifier && event.key === 's') {
+        if (modifier && event.key.toLowerCase() === 's') {
             this.props.handleSaveProject();
             event.preventDefault();
         }
@@ -560,6 +565,14 @@ class MenuBar extends React.Component {
                                         >
                                             {newProjectMessage}
                                         </MenuItem>
+                                        {this.props.onClickNewWindow && (
+                                            <MenuItem
+                                                isRtl={this.props.isRtl}
+                                                onClick={this.handleClickNewWindow}
+                                            >
+                                                {this.props.onClickNewWindow[0]}
+                                            </MenuItem>
+                                        )}
                                     </MenuSection>
                                     {(this.props.canSave || this.props.canCreateCopy || this.props.canRemix) && (
                                         <MenuSection>
@@ -611,21 +624,6 @@ class MenuBar extends React.Component {
                                                         </MenuItem>
                                                     </React.Fragment>
                                                 )}
-                                                <MenuItem onClick={this.getSaveToComputerHandler(downloadProject)}>
-                                                    {extended.available ? (
-                                                        <FormattedMessage
-                                                            defaultMessage="Save to separate file..."
-                                                            description="Download the project once, without being able to easily save to the same spot"
-                                                            id="tw.oldDownload"
-                                                        />
-                                                    ) : (
-                                                        <FormattedMessage
-                                                            defaultMessage="Save to your computer"
-                                                            description="Menu bar item for downloading a project to your computer" // eslint-disable-line max-len
-                                                            id="gui.menuBar.downloadToComputer"
-                                                        />
-                                                    )}
-                                                </MenuItem>
                                             </React.Fragment>
                                         )}</SB3Downloader>
                                     </MenuSection>
@@ -969,6 +967,7 @@ MenuBar.propTypes = {
     onClickLogin: PropTypes.func,
     onClickLogo: PropTypes.func,
     onClickNew: PropTypes.func,
+    onClickNewWindow: PropTypes.array, // [string label, callback]
     onClickRemix: PropTypes.func,
     onClickSave: PropTypes.func,
     onClickSaveAsCopy: PropTypes.func,

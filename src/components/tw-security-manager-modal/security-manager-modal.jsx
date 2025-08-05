@@ -3,70 +3,75 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import Box from '../box/box.jsx';
 import Modal from '../../containers/modal.jsx';
-
+import SecurityModals from '../../lib/tw-security-manager-constants';
+import LoadExtensionModal from './load-extension.jsx';
+import FetchModal from './fetch.jsx';
+import OpenWindowModal from './open-window.jsx';
+import RedirectModal from './redirect.jsx';
+import RecordAudio from './record-audio.jsx';
+import RecordVideo from './record-video.jsx';
+import ReadClipboard from './read-clipboard.jsx';
+import Notify from './notify.jsx';
+import DelayedMountPropertyHOC from './delayed-mount-property-hoc.jsx';
 import styles from './security-manager-modal.css';
 
 const messages = defineMessages({
     title: {
-        defaultMessage: 'Custom Extensions',
-        description: 'Title of modal shown when asking for permission to automatically load custom extension',
+        defaultMessage: 'Extension Security',
+        // eslint-disable-next-line max-len
+        description: 'Title of modal thats asks the user for permission to let the project load an extension, fetch a resource, open a window, etc.',
         id: 'tw.securityManager.title'
     }
 });
 
+const noop = () => {};
+
 const SecurityManagerModalComponent = props => (
     <Modal
         className={styles.modalContent}
-        onRequestClose={props.onDenied}
+        onRequestClose={props.enableButtons ? props.onDenied : noop}
         contentLabel={props.intl.formatMessage(messages.title)}
         id="securitymanagermodal"
     >
         <Box className={styles.body}>
-            <p>
-                <FormattedMessage
-                    defaultMessage="The project wants to load the custom extension:"
-                    description="Part of modal shown when asking for permission to automatically load custom extension"
-                    id="tw.securityManager.label"
-                />
-            </p>
-            <p className={styles.extension}>
-                {props.extensionURL}
-            </p>
-            <p>
-                <FormattedMessage
-                    // eslint-disable-next-line max-len
-                    defaultMessage="If you allow this, the extension's code will be downloaded and run on your computer."
-                    description="Part of modal shown when asking for permission to automatically load custom extension"
-                    id="tw.securityManager.download"
-                />
-            </p>
-            <p>
-                <FormattedMessage
-                    // eslint-disable-next-line max-len
-                    defaultMessage="While the code will be sandboxed, we can't guarantee this will be 100% safe. Make sure you trust the author of this extension before continuing."
-                    description="Part of modal shown when asking for permission to automatically load custom extension"
-                    id="tw.securityManager.sandbox"
-                />
-                
-            </p>
+            {props.type === SecurityModals.LoadExtension ? (
+                <LoadExtensionModal {...props.data} />
+            ) : props.type === SecurityModals.Fetch ? (
+                <FetchModal {...props.data} />
+            ) : props.type === SecurityModals.OpenWindow ? (
+                <OpenWindowModal {...props.data} />
+            ) : props.type === SecurityModals.Redirect ? (
+                <RedirectModal {...props.data} />
+            ) : props.type === SecurityModals.RecordAudio ? (
+                <RecordAudio {...props.data} />
+            ) : props.type === SecurityModals.RecordVideo ? (
+                <RecordVideo {...props.data} />
+            ) : props.type === SecurityModals.ReadClipboard ? (
+                <ReadClipboard {...props.data} />
+            ) : props.type === SecurityModals.Notify ? (
+                <Notify {...props.data} />
+            ) : null}
+
             <Box className={styles.buttons}>
                 <button
                     className={styles.denyButton}
                     onClick={props.onDenied}
+                    disabled={!props.enableButtons}
                 >
                     <FormattedMessage
                         defaultMessage="Deny"
-                        description="Refuse modal asking for permission to automatically load custom extension"
+                        description="Button in modal asking user for permission to load extension, access file, etc."
                         id="tw.securityManager.deny"
                     />
                 </button>
                 <button
                     className={styles.allowButton}
                     onClick={props.onAllowed}
+                    disabled={!props.enableButtons}
                 >
                     <FormattedMessage
                         defaultMessage="Allow"
-                        description="Refuse modal asking for permission to automatically load custom extension"
+                        description="Button in modal asking user for permission to load extension, access file, etc."
                         id="tw.securityManager.allow"
                     />
                 </button>
@@ -77,9 +82,17 @@ const SecurityManagerModalComponent = props => (
 
 SecurityManagerModalComponent.propTypes = {
     intl: intlShape,
-    extensionURL: PropTypes.string.isRequired,
+    type: PropTypes.oneOf(Object.values(SecurityModals)),
+    enableButtons: PropTypes.bool,
+    // Each modal may have different type of data
+    // eslint-disable-next-line react/forbid-prop-types
+    data: PropTypes.object.isRequired,
     onAllowed: PropTypes.func.isRequired,
     onDenied: PropTypes.func.isRequired
 };
 
-export default injectIntl(SecurityManagerModalComponent);
+// Prevent accidentally pressing buttons immediately when a prompt appears.
+const BUTTON_DELAY = 750;
+export default DelayedMountPropertyHOC(injectIntl(SecurityManagerModalComponent), BUTTON_DELAY, {
+    enableButtons: true
+});

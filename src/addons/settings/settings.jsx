@@ -28,11 +28,11 @@ import {detectLocale} from '../../lib/detect-locale';
 import {getInitialDarkMode} from '../../lib/tw-theme-hoc.jsx';
 import SettingsStore from '../settings-store-singleton';
 import Channels from '../channels';
-import extensionImage from './extension.svg';
-import brushImage from './brush.svg';
-import undoImage from './undo.svg';
-import expandImageBlack from './expand.svg';
-import infoImage from './info.svg';
+import extensionImage from './icons/extension.svg';
+import brushImage from './icons/brush.svg';
+import undoImage from './icons/undo.svg';
+import expandImageBlack from './icons/expand.svg';
+import infoImage from './icons/info.svg';
 import styles from './settings.css';
 import '../polyfill';
 import '../../lib/normalize.css';
@@ -309,6 +309,20 @@ TextInput.propTypes = {
     value: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
 };
 
+const ColorInput = props => (
+    <input
+        type="color"
+        id={props.id}
+        value={props.value}
+        onChange={props.onChange}
+    />
+);
+ColorInput.propTypes = {
+    id: PropTypes.string.isRequired,
+    onChange: PropTypes.func.isRequired,
+    value: PropTypes.string.isRequired
+};
+
 const ResetButton = ({
     addonId,
     settingId,
@@ -337,20 +351,8 @@ const Setting = ({
     setting,
     value
 }) => {
-    if (setting.if && setting.if.addonEnabled) {
-        const addons = Array.isArray(setting.if.addonEnabled) ? setting.if.addonEnabled : [setting.if.addonEnabled];
-        for (const addon of addons) {
-            if (!SettingsStore.getAddonEnabled(addon)) {
-                return null;
-            }
-        }
-    }
-    if (setting.if && setting.if.settings) {
-        for (const [settingName, expectedValue] of Object.entries(setting.if.settings)) {
-            if (SettingsStore.getAddonSetting(addonId, settingName) !== expectedValue) {
-                return null;
-            }
-        }
+    if (!SettingsStore.evaluateCondition(addonId, setting.if)) {
+        return null;
     }
     const settingId = setting.id;
     const settingName = addonTranslations[`${addonId}/@settings-name-${settingId}`] || setting.name;
@@ -400,9 +402,8 @@ const Setting = ({
             {setting.type === 'color' && (
                 <React.Fragment>
                     {label}
-                    <input
+                    <ColorInput
                         id={uniqueId}
-                        type="color"
                         value={value}
                         onChange={e => SettingsStore.setAddonSetting(addonId, settingId, e.target.value)}
                     />

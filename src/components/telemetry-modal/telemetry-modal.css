@@ -5,8 +5,8 @@
 
 /* from scratch-www */
 $active-gray: hsla(0, 0%, 0%, .1);
-$ui-blue-10percent: hsla(215, 100%, 65%, .1);
-$ui-blue-25percent:  hsla(215, 100%, 65%, .25);
+$ui-blue-10percent: hsla(0, 100%, 65%, .1);
+$ui-blue-25percent:  hsla(0, 100%, 65%, .25);
 $ui-gray: hsla(0, 0%, 95%, 1);
 
 .modal-overlay {
@@ -44,6 +44,9 @@ $ui-gray: hsla(0, 0%, 95%, 1);
     background: $ui-white;
     padding: 1.5rem 2.25rem;
 }
+[theme="dark"] .body {
+    background: $ui-primary;
+}
 
 .privacy-policy-link {
     color: $motion-primary;
@@ -61,6 +64,9 @@ $ui-gray: hsla(0, 0%, 95%, 1);
     align-items: center;
     padding: 1rem 0;
     vertical-align: middle;
+}
+[theme="dark"] .radio-buttons label {
+    background-color: $ui-secondary;
 }
 
 .radio-buttons label:hover {

@@ -174,12 +174,12 @@ class Monitor extends React.Component {
         this.element = monitorElt;
     }
     handleImport () {
-        importCSV().then(({rows, text}) => {
+        importCSV().then(async ({rows, text}) => {
             const numberOfColumns = rows[0].length;
             let columnNumber = 1;
             if (numberOfColumns > 1) {
                 const msg = this.props.intl.formatMessage(messages.columnPrompt, {numberOfColumns});
-                columnNumber = parseInt(prompt(msg), 10); // eslint-disable-line no-alert
+                columnNumber = parseInt(await prompt(msg), 10); // eslint-disable-line no-alert
             }
             let newListValue;
             if (isNaN(columnNumber) || numberOfColumns === 1) {
@@ -215,6 +215,7 @@ class Monitor extends React.Component {
                 <MonitorComponent
                     componentRef={this.setElement}
                     {...monitorProps}
+                    opcode={this.props.opcode}
                     draggable={this.props.draggable}
                     height={this.props.height}
                     isDiscrete={this.props.isDiscrete}

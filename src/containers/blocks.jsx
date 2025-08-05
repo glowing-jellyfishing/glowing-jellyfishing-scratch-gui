@@ -24,7 +24,12 @@ import LoadScratchBlocksHOC from '../lib/tw-load-scratch-blocks-hoc.jsx';
 import {connect} from 'react-redux';
 import {updateToolbox} from '../reducers/toolbox';
 import {activateColorPicker} from '../reducers/color-picker';
-import {closeExtensionLibrary, openSoundRecorder, openConnectionModal} from '../reducers/modals';
+import {
+    closeExtensionLibrary,
+    openSoundRecorder,
+    openConnectionModal,
+    openCustomExtensionModal
+} from '../reducers/modals';
 import {activateCustomProcedures, deactivateCustomProcedures} from '../reducers/custom-procedures';
 import {setConnectionModalExtensionId} from '../reducers/connection-modal';
 import {updateMetrics} from '../reducers/workspace-metrics';
@@ -123,22 +128,14 @@ class Blocks extends React.Component {
         toolboxWorkspace.registerButtonCallback('MAKE_A_VARIABLE', varListButtonCallback(''));
         toolboxWorkspace.registerButtonCallback('MAKE_A_LIST', varListButtonCallback('list'));
         toolboxWorkspace.registerButtonCallback('MAKE_A_PROCEDURE', procButtonCallback);
-        toolboxWorkspace.registerButtonCallback('OPEN_DOCUMENTATION', block => {
-            const CLASS_PREFIX = 'docs-uri-';
-            const svgGroup = block.svgGroup_;
-            const docsURIClass = Array.from(svgGroup.classList).find(i => i.startsWith(CLASS_PREFIX));
-            if (!docsURIClass) {
-                return;
-            }
-            try {
-                const docsURI = docsURIClass.substr(CLASS_PREFIX.length);
-                const url = new URL(docsURI);
-                if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-                    throw new Error('invalid protocol');
-                }
+        toolboxWorkspace.registerButtonCallback('EXTENSION_CALLBACK', block => {
+            this.props.vm.handleExtensionButtonPress(block.callbackData_);
+        });
+        toolboxWorkspace.registerButtonCallback('OPEN_EXTENSION_DOCS', block => {
+            const docsURI = block.callbackData_;
+            const url = new URL(docsURI);
+            if (url.protocol === 'http:' || url.protocol === 'https:') {
                 window.open(docsURI, '_blank');
-            } catch (e) {
-                log.warn('cannot open docs URI', e);
             }
         });
 
@@ -584,6 +581,7 @@ class Blocks extends React.Component {
             onActivateColorPicker,
             onOpenConnectionModal,
             onOpenSoundRecorder,
+            onOpenCustomExtensionModal,
             updateToolboxState,
             onActivateCustomProcedures,
             onRequestCloseExtensionLibrary,
@@ -620,6 +618,7 @@ class Blocks extends React.Component {
                         vm={vm}
                         onCategorySelected={this.handleCategorySelected}
                         onRequestClose={onRequestCloseExtensionLibrary}
+                        onOpenCustomExtensionModal={this.props.onOpenCustomExtensionModal}
                     />
                 ) : null}
                 {customProceduresVisible ? (
@@ -652,6 +651,7 @@ Blocks.propTypes = {
     onActivateCustomProcedures: PropTypes.func,
     onOpenConnectionModal: PropTypes.func,
     onOpenSoundRecorder: PropTypes.func,
+    onOpenCustomExtensionModal: PropTypes.func,
     onRequestCloseCustomProcedures: PropTypes.func,
     onRequestCloseExtensionLibrary: PropTypes.func,
     options: PropTypes.shape({
@@ -745,6 +745,7 @@ const mapDispatchToProps = dispatch => ({
         dispatch(activateTab(SOUNDS_TAB_INDEX));
         dispatch(openSoundRecorder());
     },
+    onOpenCustomExtensionModal: () => dispatch(openCustomExtensionModal()),
     onRequestCloseExtensionLibrary: () => {
         dispatch(closeExtensionLibrary());
     },

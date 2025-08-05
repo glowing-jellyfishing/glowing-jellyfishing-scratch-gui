@@ -9,8 +9,6 @@ import topBlock from './top-block.svg';
 import middleBlock from './middle-block.svg';
 import bottomBlock from './bottom-block.svg';
 
-import * as progressMonitor from './tw-progress-monitor';
-
 // tw:
 // we make some rather large changes here:
 //  - remove random message, replaced with message dependent on what is actually being loaded
@@ -18,6 +16,9 @@ import * as progressMonitor from './tw-progress-monitor';
 //  - bring in intl so that we can translate everything
 // The way of doing this is extremely unusual and weird compared to how things are typically done for performance.
 // This is because react updates are too performance crippling to handle the progress bar rapidly updating.
+
+// tw:
+// progress bar logic removed entirely as it is unneeded in desktop build
 
 const mainMessages = {
     'gui.loader.headline': (
@@ -63,40 +64,12 @@ class LoaderComponent extends React.Component {
     constructor (props) {
         super(props);
         this._state = 0;
-        this.progress = 0;
-        this.complete = 0;
-        this.total = 0;
         bindAll(this, [
-            'barInnerRef',
-            'handleProgressChange',
             'messageRef'
         ]);
     }
     componentDidMount () {
-        progressMonitor.setProgressHandler(this.handleProgressChange);
         this.updateMessage();
-    }
-    componentDidUpdate () {
-        this.update();
-    }
-    componentWillUnmount () {
-        progressMonitor.setProgressHandler(() => {});
-    }
-    handleProgressChange (state, progress, complete, total) {
-        if (state !== this._state) {
-            this._state = state;
-            this.updateMessage();
-        }
-        this.progress = progress;
-        this.complete = complete;
-        this.total = total;
-        this.update();
-    }
-    update () {
-        this.barInner.style.width = `${this.progress * 100}%`;
-        if (this._state === 2) {
-            this.updateMessage();
-        }
     }
     updateMessage () {
         if (this._state === 0) {
@@ -111,9 +84,6 @@ class LoaderComponent extends React.Component {
         } else {
             this.message.textContent = this.props.intl.formatMessage(messages.assetsUnknown);
         }
-    }
-    barInnerRef (element) {
-        this.barInner = element;
     }
     messageRef (element) {
         this.message = element;
@@ -147,12 +117,6 @@ class LoaderComponent extends React.Component {
                         <div
                             className={styles.messageContainerInner}
                             ref={this.messageRef}
-                        />
-                    </div>
-                    <div className={styles.twProgressOuter}>
-                        <div
-                            className={styles.twProgressInner}
-                            ref={this.barInnerRef}
                         />
                     </div>
                 </div>

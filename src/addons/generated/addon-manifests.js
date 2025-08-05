@@ -20,6 +20,7 @@ import _color_picker from "../addons/color-picker/_manifest_entry.js";
 import _remove_sprite_confirm from "../addons/remove-sprite-confirm/_manifest_entry.js";
 import _block_count from "../addons/block-count/_manifest_entry.js";
 import _onion_skinning from "../addons/onion-skinning/_manifest_entry.js";
+import _paint_snap from "../addons/paint-snap/_manifest_entry.js";
 import _default_costume_editor_color from "../addons/default-costume-editor-color/_manifest_entry.js";
 import _bitmap_copy from "../addons/bitmap-copy/_manifest_entry.js";
 import _2d_color_picker from "../addons/2d-color-picker/_manifest_entry.js";
@@ -34,6 +35,7 @@ import _editor_stage_left from "../addons/editor-stage-left/_manifest_entry.js";
 import _editor_buttons_reverse_order from "../addons/editor-buttons-reverse-order/_manifest_entry.js";
 import _variable_manager from "../addons/variable-manager/_manifest_entry.js";
 import _search_sprites from "../addons/search-sprites/_manifest_entry.js";
+import _sprite_properties from "../addons/sprite-properties/_manifest_entry.js";
 import _gamepad from "../addons/gamepad/_manifest_entry.js";
 import _editor_sounds from "../addons/editor-sounds/_manifest_entry.js";
 import _folders from "../addons/folders/_manifest_entry.js";
@@ -65,7 +67,9 @@ import _hide_stage from "../addons/hide-stage/_manifest_entry.js";
 import _tw_straighten_comments from "../addons/tw-straighten-comments/_manifest_entry.js";
 import _tw_remove_backpack from "../addons/tw-remove-backpack/_manifest_entry.js";
 import _tw_remove_feedback from "../addons/tw-remove-feedback/_manifest_entry.js";
+import _tw_disable_cloud_variables from "../addons/tw-disable-cloud-variables/_manifest_entry.js";
 import _tw_disable_compiler from "../addons/tw-disable-compiler/_manifest_entry.js";
+import _tw_disable_restore_points from "../addons/tw-disable-restore-points/_manifest_entry.js";
 import _editor_stepping from "../addons/editor-stepping/_manifest_entry.js";
 export default {
   "cat-blocks": _cat_blocks,
@@ -89,6 +93,7 @@ export default {
   "remove-sprite-confirm": _remove_sprite_confirm,
   "block-count": _block_count,
   "onion-skinning": _onion_skinning,
+  "paint-snap": _paint_snap,
   "default-costume-editor-color": _default_costume_editor_color,
   "bitmap-copy": _bitmap_copy,
   "2d-color-picker": _2d_color_picker,
@@ -103,6 +108,7 @@ export default {
   "editor-buttons-reverse-order": _editor_buttons_reverse_order,
   "variable-manager": _variable_manager,
   "search-sprites": _search_sprites,
+  "sprite-properties": _sprite_properties,
   "gamepad": _gamepad,
   "editor-sounds": _editor_sounds,
   "folders": _folders,
@@ -134,6 +140,8 @@ export default {
   "tw-straighten-comments": _tw_straighten_comments,
   "tw-remove-backpack": _tw_remove_backpack,
   "tw-remove-feedback": _tw_remove_feedback,
+  "tw-disable-cloud-variables": _tw_disable_cloud_variables,
   "tw-disable-compiler": _tw_disable_compiler,
+  "tw-disable-restore-points": _tw_disable_restore_points,
   "editor-stepping": _editor_stepping,
 };

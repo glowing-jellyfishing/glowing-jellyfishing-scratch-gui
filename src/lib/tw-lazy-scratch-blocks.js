@@ -1,24 +1,10 @@
-let _ScratchBlocks = null;
+import ScratchBlocks from 'scratch-blocks';
 
-const isLoaded = () => !!_ScratchBlocks;
+const isLoaded = () => true;
 
-const get = () => {
-    if (!isLoaded()) {
-        throw new Error('scratch-blocks is not loaded yet');
-    }
-    return _ScratchBlocks;
-};
+const get = () => ScratchBlocks;
 
-const load = () => {
-    if (_ScratchBlocks) {
-        return Promise.resolve();
-    }
-    return import(/* webpackChunkName: "sb" */ 'scratch-blocks')
-        .then(m => {
-            _ScratchBlocks = m.default;
-            return _ScratchBlocks;
-        });
-};
+const load = () => Promise.resolve();
 
 export default {
     get,

@@ -452,7 +452,7 @@ test('setStoreWithVersionCheck', () => {
     expect(store.setStore).toHaveBeenCalledTimes(0);
 });
 
-test('parseSearchParameter', () => {
+test('parseUrlParameter', () => {
     const store = new SettingStore();
     expect(store.getAddonEnabled('pause')).toBe(true);
     expect(store.getAddonEnabled('mute-project')).toBe(true);
@@ -517,4 +517,89 @@ test('Settings migration 3 -> 4', () => {
     expect(store.getAddonEnabled('editor-devtools')).toBe(false);
     expect(store.getAddonEnabled('find-bar')).toBe(false);
     expect(store.getAddonEnabled('middle-click-popup')).toBe(false);
+});
+
+test('if', () => {
+    const store = new SettingStore();
+    store.setAddonEnabled('editor-devtools', true);
+    store.setAddonEnabled('onion-skinning', false);
+    store.setAddonSetting('editor-theme3', 'motion-color', '#000000');
+    store.setAddonSetting('editor-theme3', 'looks-color', '#FFFFFF');
+
+    // eslint-disable-next-line no-undefined
+    expect(store.evaluateCondition('editor-theme3', undefined)).toBe(true);
+    expect(store.evaluateCondition('editor-theme3', null)).toBe(true);
+    expect(store.evaluateCondition('editor-theme3', {})).toBe(true);
+
+    expect(store.evaluateCondition('editor-theme3', {
+        addonEnabled: ['onion-skinning']
+    })).toBe(false);
+    expect(store.evaluateCondition('editor-theme3', {
+        addonEnabled: 'onion-skinning'
+    })).toBe(false);
+    expect(store.evaluateCondition('editor-theme3', {
+        addonEnabled: ['editor-devtools']
+    })).toBe(true);
+    expect(store.evaluateCondition('editor-theme3', {
+        addonEnabled: 'editor-devtools'
+    })).toBe(true);
+    expect(store.evaluateCondition('editor-theme3', {
+        addonEnabled: ['editor-devtools', 'onion-skinning']
+    })).toBe(true);
+
+    expect(store.evaluateCondition('editor-theme3', {
+        settings: {}
+    })).toBe(true);
+    expect(store.evaluateCondition('editor-theme3', {
+        settings: {
+            'motion-color': '#000000'
+        }
+    })).toBe(true);
+    expect(store.evaluateCondition('editor-theme3', {
+        settings: {
+            'looks-color': '#FFFFFF'
+        }
+    })).toBe(true);
+    expect(store.evaluateCondition('editor-theme3', {
+        settings: {
+            'looks-color': '#FFFFFE'
+        }
+    })).toBe(false);
+    expect(store.evaluateCondition('editor-theme3', {
+        settings: {
+            'motion-color': '#000000',
+            'looks-color': '#FFFFFF'
+        }
+    })).toBe(true);
+    expect(store.evaluateCondition('editor-theme3', {
+        settings: {
+            'motion-color': '#000001',
+            'looks-color': '#FFFFFF'
+        }
+    })).toBe(false);
+
+    expect(store.evaluateCondition('editor-theme3', {
+        addonEnabled: ['editor-devtools'],
+        settings: {
+            'motion-color': '#000000'
+        }
+    })).toBe(true);
+    expect(store.evaluateCondition('editor-theme3', {
+        addonEnabled: ['onion-skinning'],
+        settings: {
+            'motion-color': '#000000'
+        }
+    })).toBe(false);
+    expect(store.evaluateCondition('editor-theme3', {
+        addonEnabled: ['editor-devtools'],
+        settings: {
+            'motion-color': '#000001'
+        }
+    })).toBe(false);
+    expect(store.evaluateCondition('editor-theme3', {
+        addonEnabled: ['onion-skinning'],
+        settings: {
+            'motion-color': '#000001'
+        }
+    })).toBe(false);
 });

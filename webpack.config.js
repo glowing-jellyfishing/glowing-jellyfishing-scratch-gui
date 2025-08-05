@@ -45,8 +45,8 @@ const base = {
     },
     output: {
         library: 'GUI',
-        filename: process.env.NODE_ENV === 'production' ? 'js/[name].[contenthash].js' : 'js/[name].js',
-        chunkFilename: process.env.NODE_ENV === 'production' ? 'js/[name].[contenthash].js' : 'js/[name].js',
+        filename: process.env.NODE_ENV === 'production' ? 'js/[name].js' : 'js/[name].js',
+        chunkFilename: process.env.NODE_ENV === 'production' ? 'js/[name].js' : 'js/[name].js',
         publicPath: root
     },
     resolve: {
@@ -238,7 +238,7 @@ module.exports = [
                 filename: 'js/[name].js',
                 chunkFilename: 'js/[name].js',
                 path: path.resolve('dist'),
-                publicPath: `${STATIC_PATH}/`
+                // publicPath: `${STATIC_PATH}/`
             },
             externals: {
                 'react': 'react',
