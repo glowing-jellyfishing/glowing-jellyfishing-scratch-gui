@@ -1,3 +1,32 @@
+<style>
+  body {
+    background-color: orange;
+  }
+</style>
+
+<div>
+  <iframe src="../embed.html?api#453193538" width="499" height="416" allowtransparency="true" frameborder="0" scrolling="no" allowfullscreen></iframe>
+</div>
+
+<script>
+  window.addEventListener('message', e => {
+    const data = e.data;
+    const source = e.source;
+    const origin = e.origin;
+
+    console.log(data);
+  });
+
+  const postMessage = obj => {
+    const iframe = document.querySelector('iframe');
+    iframe.contentWindow.postMessage(obj, '*');
+  };
+</script>
+
+<div>
+  <button onclick="postMessage({type:'set',name:'my variable',value:prompt('Value?')})">Set</button>
+  <button onclick="postMessage({type:'get',name:'my variable'})"></button>
+</div>
 <!DOCTYPE html>
 <html>
   <head>
