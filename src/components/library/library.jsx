@@ -3,6 +3,7 @@ import bindAll from 'lodash.bindall';
 import PropTypes from 'prop-types';
 import React from 'react';
 import {defineMessages, injectIntl, intlShape} from 'react-intl';
+import {isScratchDesktop} from '../../lib/isScratchDesktop';
 
 import LibraryItem from '../../containers/library-item.jsx';
 import Modal from '../../containers/modal.jsx';
@@ -47,14 +48,25 @@ class LibraryComponent extends React.Component {
             playingItem: null,
             filterQuery: '',
             selectedTag: ALL_TAG.tag,
-            loaded: false
+            loaded: false,
+            data: props.data
         };
     }
     componentDidMount () {
-        // Allow the spinner to display before loading the content
-        setTimeout(() => {
-            this.setState({loaded: true});
-        });
+        if (this.state.data.then) {
+            // If data is a promise, wait for the promise to resolve
+            this.state.data.then(data => {
+                this.setState({
+                    loaded: true,
+                    data
+                });
+            });
+        } else {
+            // Allow the spinner to display before loading the content
+            setTimeout(() => {
+                this.setState({loaded: true});
+            });
+        }
         if (this.props.setStopHandler) this.props.setStopHandler(this.handlePlayingEnd);
     }
     componentDidUpdate (prevProps, prevState) {
@@ -62,9 +74,21 @@ class LibraryComponent extends React.Component {
             prevState.selectedTag !== this.state.selectedTag) {
             this.scrollToTop();
         }
+        if (prevProps.data !== this.props.data) {
+            // eslint-disable-next-line react/no-did-update-set-state
+            this.setState({
+                data: this.props.data
+            });
+        }
     }
     handleSelect (id) {
-        this.handleClose();
+        const extension = this.getFilteredData()[id];
+        if (extension.href) {
+            window.open(extension.href);
+        }
+        if (!extension.href || isScratchDesktop()) {
+            this.handleClose();
+        }
         this.props.onItemSelected(this.getFilteredData()[id]);
     }
     handleClose () {
@@ -129,8 +153,8 @@ class LibraryComponent extends React.Component {
     }
     getFilteredData () {
         if (this.state.selectedTag === 'all') {
-            if (!this.state.filterQuery) return this.props.data;
-            return this.props.data.filter(dataItem => (
+            if (!this.state.filterQuery) return this.state.data;
+            return this.state.data.filter(dataItem => (
                 (dataItem.tags || [])
                     // Second argument to map sets `this`
                     .map(String.prototype.toLowerCase.call, String.prototype.toLowerCase)
@@ -144,7 +168,7 @@ class LibraryComponent extends React.Component {
                     .indexOf(this.state.filterQuery.toLowerCase()) !== -1
             ));
         }
-        return this.props.data.filter(dataItem => (
+        return this.state.data.filter(dataItem => (
             dataItem.tags &&
             dataItem.tags
                 .map(String.prototype.toLowerCase.call, String.prototype.toLowerCase)
@@ -217,10 +241,12 @@ class LibraryComponent extends React.Component {
                             extensionId={dataItem.extensionId}
                             featured={dataItem.featured}
                             hidden={dataItem.hidden}
+                            href={dataItem.href}
                             iconMd5={dataItem.costumes ? dataItem.costumes[0].md5ext : dataItem.md5ext}
                             iconRawURL={dataItem.rawURL}
                             icons={dataItem.costumes}
                             id={index}
+                            incompatibleWithScratch={dataItem.incompatibleWithScratch}
                             insetIconURL={dataItem.insetIconURL}
                             internetConnectionRequired={dataItem.internetConnectionRequired}
                             isPlaying={this.state.playingItem === index}
@@ -246,7 +272,7 @@ class LibraryComponent extends React.Component {
 }
 
 LibraryComponent.propTypes = {
-    data: PropTypes.arrayOf(
+    data: PropTypes.oneOfType([PropTypes.arrayOf(
         /* eslint-disable react/no-unused-prop-types, lines-around-comment */
         // An item in the library
         PropTypes.shape({
@@ -259,7 +285,7 @@ LibraryComponent.propTypes = {
             rawURL: PropTypes.string
         })
         /* eslint-enable react/no-unused-prop-types, lines-around-comment */
-    ),
+    ), PropTypes.instanceOf(Promise)]),
     filterable: PropTypes.bool,
     id: PropTypes.string.isRequired,
     intl: intlShape.isRequired,

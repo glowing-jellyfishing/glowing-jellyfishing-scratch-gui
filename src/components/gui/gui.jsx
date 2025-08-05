@@ -24,15 +24,22 @@ import Watermark from '../../containers/watermark.jsx';
 
 import Backpack from '../../containers/backpack.jsx';
 import WebGlModal from '../../containers/webgl-modal.jsx';
+import BrowserModal from '../browser-modal/browser-modal.jsx';
 import TipsLibrary from '../../containers/tips-library.jsx';
 import Cards from '../../containers/cards.jsx';
 import Alerts from '../../containers/alerts.jsx';
 import DragLayer from '../../containers/drag-layer.jsx';
 import ConnectionModal from '../../containers/connection-modal.jsx';
 import TelemetryModal from '../telemetry-modal/telemetry-modal.jsx';
+import TWUsernameModal from '../../containers/tw-username-modal.jsx';
+import TWSettingsModal from '../../containers/tw-settings-modal.jsx';
+import TWSecurityManager from '../../containers/tw-security-manager.jsx';
+import TWCustomExtensionModal from '../../containers/tw-custom-extension-modal.jsx';
 
 import layout, {STAGE_SIZE_MODES} from '../../lib/layout-constants';
 import {resolveStageSize} from '../../lib/screen-utils';
+
+import {isRendererSupported, isBrowserSupported} from '../../lib/tw-environment-support-prober';
 
 import styles from './gui.css';
 import addExtensionIcon from './icon--extensions.svg';
@@ -48,9 +55,18 @@ const messages = defineMessages({
     }
 });
 
-// Cache this value to only retrieve it once the first time.
-// Assume that it doesn't change for a session.
-let isRendererSupported = null;
+const getFullscreenBackgroundColor = () => {
+    const params = new URLSearchParams(location.search);
+    if (params.has('fullscreen-background')) {
+        return params.get('fullscreen-background');
+    }
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return '#111';
+    }
+    return 'white';
+};
+
+const fullscreenBackgroundColor = getFullscreenBackgroundColor();
 
 const GUIComponent = props => {
     const {
@@ -79,21 +95,28 @@ const GUIComponent = props => {
         connectionModalVisible,
         costumeLibraryVisible,
         costumesTabVisible,
+        customStageSize,
         enableCommunity,
         intl,
         isCreating,
+        isDark,
         isEmbedded,
         isFullScreen,
         isPlayerOnly,
         isRtl,
         isShared,
         isWindowFullScreen,
+        isTelemetryEnabled,
         loading,
         logo,
         renderLogin,
         onClickAbout,
         onClickAccountNav,
         onCloseAccountNav,
+        onClickAddonSettings,
+        onClickNewWindow,
+        onClickTheme,
+        onClickPackager,
         onLogOut,
         onOpenRegistration,
         onToggleLoginOpen,
@@ -109,6 +132,7 @@ const GUIComponent = props => {
         onSeeCommunity,
         onShare,
         onShowPrivacyPolicy,
+        onStartSelectingFileUpload,
         onTelemetryModalCancel,
         onTelemetryModalOptIn,
         onTelemetryModalOptOut,
@@ -118,6 +142,9 @@ const GUIComponent = props => {
         targetIsStage,
         telemetryModalVisible,
         tipsLibraryVisible,
+        usernameModalVisible,
+        settingsModalVisible,
+        customExtensionModalVisible,
         vm,
         ...componentProps
     } = omit(props, 'dispatch');
@@ -134,23 +161,36 @@ const GUIComponent = props => {
         tabSelected: classNames(tabStyles.reactTabsTabSelected, styles.isSelected)
     };
 
-    if (isRendererSupported === null) {
-        isRendererSupported = Renderer.isSupported();
-    }
-
-    return (<MediaQuery minWidth={layout.fullSizeMinWidth}>{isFullSize => {
+    const minWidth = layout.fullSizeMinWidth + Math.max(0, customStageSize.width - layout.referenceWidth);
+    return (<MediaQuery minWidth={minWidth}>{isFullSize => {
         const stageSize = resolveStageSize(stageSizeMode, isFullSize);
+
+        const alwaysEnabledModals = (
+            <React.Fragment>
+                <TWSecurityManager />
+                {usernameModalVisible && <TWUsernameModal />}
+                {settingsModalVisible && <TWSettingsModal />}
+                {customExtensionModalVisible && <TWCustomExtensionModal />}
+            </React.Fragment>
+        );
 
         return isPlayerOnly ? (
             <React.Fragment>
-                {/* tw: when window is fullscreen, put a solid white background behind the stage */}
+                {/* TW: When the window is fullscreen, use an element to display the background color */}
+                {/* The default color for transparency is inconsistent between browsers and there isn't an existing */}
+                {/* element for us to style that fills the entire screen. */}
                 {isWindowFullScreen ? (
-                    <div className={styles.fullscreenBackground} />
+                    <div
+                        className={styles.fullscreenBackground}
+                        style={{
+                            backgroundColor: fullscreenBackgroundColor
+                        }}
+                    />
                 ) : null}
                 <StageWrapper
                     isFullScreen={isFullScreen}
                     isEmbedded={isEmbedded}
-                    isRendererSupported={isRendererSupported}
+                    isRendererSupported={isRendererSupported()}
                     isRtl={isRtl}
                     loading={loading}
                     stageSize={STAGE_SIZE_MODES.large}
@@ -160,6 +200,7 @@ const GUIComponent = props => {
                         <Alerts className={styles.alertsContainer} />
                     ) : null}
                 </StageWrapper>
+                {alwaysEnabledModals}
             </React.Fragment>
         ) : (
             <Box
@@ -167,8 +208,11 @@ const GUIComponent = props => {
                 dir={isRtl ? 'rtl' : 'ltr'}
                 {...componentProps}
             >
+                {alwaysEnabledModals}
                 {telemetryModalVisible ? (
                     <TelemetryModal
+                        isRtl={isRtl}
+                        isTelemetryEnabled={isTelemetryEnabled}
                         onCancel={onTelemetryModalCancel}
                         onOptIn={onTelemetryModalOptIn}
                         onOptOut={onTelemetryModalOptOut}
@@ -177,13 +221,19 @@ const GUIComponent = props => {
                     />
                 ) : null}
                 {loading ? (
-                    <Loader />
+                    <Loader isFullScreen />
                 ) : null}
                 {isCreating ? (
-                    <Loader messageId="gui.loader.creating" />
+                    <Loader
+                        isFullScreen
+                        messageId="gui.loader.creating"
+                    />
                 ) : null}
-                {isRendererSupported ? null : (
+                {isRendererSupported() ? null : (
                     <WebGlModal isRtl={isRtl} />
+                )}
+                {isBrowserSupported() ? null : (
+                    <BrowserModal isRtl={isRtl} />
                 )}
                 {tipsLibraryVisible ? (
                     <TipsLibrary />
@@ -232,6 +282,10 @@ const GUIComponent = props => {
                     showComingSoon={showComingSoon}
                     onClickAbout={onClickAbout}
                     onClickAccountNav={onClickAccountNav}
+                    onClickAddonSettings={onClickAddonSettings}
+                    onClickNewWindow={onClickNewWindow}
+                    onClickTheme={onClickTheme}
+                    onClickPackager={onClickPackager}
                     onClickLogo={onClickLogo}
                     onCloseAccountNav={onCloseAccountNav}
                     onLogOut={onLogOut}
@@ -239,6 +293,7 @@ const GUIComponent = props => {
                     onProjectTelemetryEvent={onProjectTelemetryEvent}
                     onSeeCommunity={onSeeCommunity}
                     onShare={onShare}
+                    onStartSelectingFileUpload={onStartSelectingFileUpload}
                     onToggleLoginOpen={onToggleLoginOpen}
                 />
                 <Box className={styles.bodyWrapper}>
@@ -332,7 +387,10 @@ const GUIComponent = props => {
                                     </Box>
                                 </TabPanel>
                                 <TabPanel className={tabClassNames.tabPanel}>
-                                    {costumesTabVisible ? <CostumeTab vm={vm} /> : null}
+                                    {costumesTabVisible ? <CostumeTab
+                                        vm={vm}
+                                        isDark={isDark}
+                                    /> : null}
                                 </TabPanel>
                                 <TabPanel className={tabClassNames.tabPanel}>
                                     {soundsTabVisible ? <SoundTab vm={vm} /> : null}
@@ -346,7 +404,7 @@ const GUIComponent = props => {
                         <Box className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}>
                             <StageWrapper
                                 isFullScreen={isFullScreen}
-                                isRendererSupported={isRendererSupported}
+                                isRendererSupported={isRendererSupported()}
                                 isRtl={isRtl}
                                 stageSize={stageSize}
                                 vm={vm}
@@ -390,9 +448,14 @@ GUIComponent.propTypes = {
     children: PropTypes.node,
     costumeLibraryVisible: PropTypes.bool,
     costumesTabVisible: PropTypes.bool,
+    customStageSize: PropTypes.shape({
+        width: PropTypes.number,
+        height: PropTypes.number
+    }),
     enableCommunity: PropTypes.bool,
     intl: intlShape.isRequired,
     isCreating: PropTypes.bool,
+    isDark: PropTypes.bool,
     isEmbedded: PropTypes.bool,
     isFullScreen: PropTypes.bool,
     isPlayerOnly: PropTypes.bool,
@@ -404,8 +467,11 @@ GUIComponent.propTypes = {
     onActivateCostumesTab: PropTypes.func,
     onActivateSoundsTab: PropTypes.func,
     onActivateTab: PropTypes.func,
-    onClickAbout: PropTypes.func,
     onClickAccountNav: PropTypes.func,
+    onClickAddonSettings: PropTypes.func,
+    onClickNewWindow: PropTypes.func,
+    onClickTheme: PropTypes.func,
+    onClickPackager: PropTypes.func,
     onClickLogo: PropTypes.func,
     onCloseAccountNav: PropTypes.func,
     onExtensionButtonClick: PropTypes.func,
@@ -417,6 +483,7 @@ GUIComponent.propTypes = {
     onSeeCommunity: PropTypes.func,
     onShare: PropTypes.func,
     onShowPrivacyPolicy: PropTypes.func,
+    onStartSelectingFileUpload: PropTypes.func,
     onTabSelect: PropTypes.func,
     onTelemetryModalCancel: PropTypes.func,
     onTelemetryModalOptIn: PropTypes.func,
@@ -429,6 +496,9 @@ GUIComponent.propTypes = {
     targetIsStage: PropTypes.bool,
     telemetryModalVisible: PropTypes.bool,
     tipsLibraryVisible: PropTypes.bool,
+    usernameModalVisible: PropTypes.bool,
+    settingsModalVisible: PropTypes.bool,
+    customExtensionModalVisible: PropTypes.bool,
     vm: PropTypes.instanceOf(VM).isRequired
 };
 GUIComponent.defaultProps = {
@@ -453,6 +523,7 @@ GUIComponent.defaultProps = {
 };
 
 const mapStateToProps = state => ({
+    customStageSize: state.scratchGui.customStageSize,
     isWindowFullScreen: state.scratchGui.tw.isWindowFullScreen,
     // This is the button's mode, as opposed to the actual current state
     stageSizeMode: state.scratchGui.stageSize.stageSize

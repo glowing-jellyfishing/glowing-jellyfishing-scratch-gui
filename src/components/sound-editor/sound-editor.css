@@ -52,6 +52,10 @@
     border-right: 1px dashed $ui-black-transparent;
 }
 
+.name-input {
+    width: 100%;
+}
+
 .waveform-container {
     display: flex;
     justify-content: space-around;
@@ -83,12 +87,21 @@ $border-radius: 0.25rem;
     user-select: none;
     margin: 0px;
 }
+[theme="dark"] .button {
+    background-color: $ui-primary;
+}
 
 .button > img {
     flex-grow: 1;
     max-width: 100%;
     max-height: 100%;
     min-width: 1.25rem;
+}
+
+.round-button-outer {
+    display: flex;
+    align-items: center;
+    height: 100%;
 }
 
 .round-button {
@@ -101,6 +114,9 @@ $border-radius: 0.25rem;
     cursor: pointer;
     padding: 0.75rem;
     user-select: none;
+}
+[theme="dark"] .round-button {
+    border-color: transparent;
 }
 
 .round-button > img {
@@ -133,6 +149,12 @@ $border-radius: 0.25rem;
 
 .trim-button > img {
     width: 1.25rem;
+}
+
+.effects {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
 }
 
 .effect-button {
@@ -222,4 +244,36 @@ $border-radius: 0.25rem;
 
 .button:disabled > img {
     opacity: 0.25;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: calc(2 * $space);
+}
+.duration {
+    font-weight: bold;
+}
+.advanced-info {
+
+}
+
+.alert {
+    margin-top: calc(2 * $space);
+    border-radius: 5px;
+    padding: $space;
+    display: flex;
+    align-items: center;
+    border-width: 1px;
+    border-style: solid;
+}
+
+.stereo {
+    background-color: rgba(145, 145, 255, 0.3);
+    border-color: rgb(145, 145, 255)
+}
+
+.too-large {
+    background-color: rgba(255, 119, 0, 0.3);
+    border-color: rgb(255, 119, 0);
 }

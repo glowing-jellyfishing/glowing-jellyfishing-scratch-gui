@@ -18,6 +18,18 @@ export const setProgressHandler = newHandler => {
     progressHandler(state, currentProgress, complete, total);
 };
 
+let progressHandlerTimeout = null;
+const fireProgressHandler = () => {
+    progressHandler(state, currentProgress, complete, total);
+    progressHandlerTimeout = null;
+};
+
+const queueProgressHandlerUpdate = () => {
+    if (progressHandlerTimeout === null) {
+        progressHandlerTimeout = requestAnimationFrame(fireProgressHandler);
+    }
+};
+
 const setProgress = progress => {
     if (progress < 0) {
         progress = 0;
@@ -26,7 +38,7 @@ const setProgress = progress => {
         progress = 1;
     }
     currentProgress = progress;
-    progressHandler(state, progress, complete, total);
+    queueProgressHandlerUpdate();
 };
 
 const setState = newState => {
@@ -82,18 +94,20 @@ const handleWorkerMessage = e => {
     }
 };
 
-let downloadWorker = null;
-const originalPostMessage = window.Worker.prototype.postMessage;
-window.Worker.prototype.postMessage = function (message) {
-    if (downloadWorker === null) {
-        if (message && message.url && message.id && message.options) {
-            downloadWorker = this;
-            downloadWorker.addEventListener('message', handleWorkerMessage);
+if (window.Worker) {
+    let downloadWorker = null;
+    const originalPostMessage = window.Worker.prototype.postMessage;
+    window.Worker.prototype.postMessage = function (message) {
+        if (downloadWorker === null) {
+            if (message && message.url && message.id && message.options) {
+                downloadWorker = this;
+                downloadWorker.addEventListener('message', handleWorkerMessage);
+            }
         }
-    }
-    if (downloadWorker === this) {
-        setState(2);
-        total++;
-    }
-    originalPostMessage.call(this, message);
-};
+        if (downloadWorker === this) {
+            setState(2);
+            total++;
+        }
+        originalPostMessage.call(this, message);
+    };
+}

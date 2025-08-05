@@ -19,7 +19,7 @@ import {getEventXY} from '../lib/touch-utils';
 
 import StageSelectorComponent from '../components/stage-selector/stage-selector.jsx';
 
-import backdropLibraryContent from '../lib/libraries/backdrops.json';
+import {getBackdropLibrary} from '../lib/libraries/tw-async-libraries';
 import {handleFileUpload, costumeUpload} from '../lib/file-uploader.js';
 
 const dragTypes = [
@@ -90,8 +90,9 @@ class StageSelector extends React.Component {
             }
         });
     }
-    handleSurpriseBackdrop (e) {
+    async handleSurpriseBackdrop (e) {
         e.stopPropagation(); // Prevent click from falling through to selecting stage.
+        const backdropLibraryContent = await getBackdropLibrary();
         // @todo should this not add a backdrop you already have?
         const item = backdropLibraryContent[Math.floor(Math.random() * backdropLibraryContent.length)];
         this.addBackdropFromLibraryItem(item, false);
@@ -102,10 +103,10 @@ class StageSelector extends React.Component {
         this.handleNewBackdrop(emptyCostume(this.props.intl.formatMessage(sharedMessages.backdrop, {index: 1})));
     }
     handleBackdropUpload (e) {
-        const storage = this.props.vm.runtime.storage;
+        const vm = this.props.vm;
         this.props.onShowImporting();
         handleFileUpload(e.target, (buffer, fileType, fileName, fileIndex, fileCount) => {
-            costumeUpload(buffer, fileType, storage, vmCostumes => {
+            costumeUpload(buffer, fileType, vm, vmCostumes => {
                 this.props.vm.setEditingTarget(this.props.id);
                 vmCostumes.forEach((costume, i) => {
                     costume.name = `${fileName}${i ? i + 1 : ''}`;

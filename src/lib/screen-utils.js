@@ -1,5 +1,7 @@
 import layout, {STAGE_DISPLAY_SCALES, STAGE_SIZE_MODES, STAGE_DISPLAY_SIZES} from '../lib/layout-constants';
 
+const maxScaleParam = typeof URLSearchParams !== 'undefined' && new URLSearchParams(location.search).get('scale');
+
 /**
  * @typedef {object} StageDimensions
  * @property {int} height - the height to be used for the stage in the current situation.
@@ -38,13 +40,14 @@ const resolveStageSize = (stageSizeMode, isFullSize) => {
 /**
  * Retrieve info used to determine the actual stage size based on the current GUI and browser state.
  * @param {STAGE_DISPLAY_SIZES} stageSize - the current fully-resolved stage size.
+ * @param {{width: number, height: number}} customStageSize Custom stage size
  * @param {boolean} isFullScreen - true if full-screen mode is enabled.
  * @return {StageDimensions} - an object describing the dimensions of the stage.
  */
-const getStageDimensions = (stageSize, isFullScreen) => {
+const getStageDimensions = (stageSize, customStageSize, isFullScreen) => {
     const stageDimensions = {
-        heightDefault: layout.standardStageHeight,
-        widthDefault: layout.standardStageWidth,
+        heightDefault: customStageSize.height,
+        widthDefault: customStageSize.width,
         height: 0,
         width: 0,
         scale: 0
@@ -55,11 +58,14 @@ const getStageDimensions = (stageSize, isFullScreen) => {
             STAGE_DIMENSION_DEFAULTS.menuHeightAdjustment -
             STAGE_DIMENSION_DEFAULTS.fullScreenSpacingBorderAdjustment;
 
-        stageDimensions.width = stageDimensions.height + (stageDimensions.height / 3);
+        stageDimensions.width = stageDimensions.height * (customStageSize.width / customStageSize.height);
 
-        if (stageDimensions.width > window.innerWidth) {
-            stageDimensions.width = window.innerWidth;
-            stageDimensions.height = stageDimensions.width * .75;
+        const maxWidth = maxScaleParam ? (
+            Math.min(window.innerWidth, maxScaleParam * customStageSize.width)
+        ) : window.innerWidth;
+        if (stageDimensions.width > maxWidth) {
+            stageDimensions.width = maxWidth;
+            stageDimensions.height = stageDimensions.width * (customStageSize.height / customStageSize.width);
         }
 
         stageDimensions.scale = stageDimensions.width / stageDimensions.widthDefault;
@@ -75,6 +81,8 @@ const getStageDimensions = (stageSize, isFullScreen) => {
 
     return stageDimensions;
 };
+
+const getMinWidth = stageSize => STAGE_DISPLAY_SCALES[stageSize] * 480;
 
 /**
  * Take a pair of sizes for the stage (a target height and width and a default height and width),
@@ -99,6 +107,7 @@ const stageSizeToTransform = ({width, height, widthDefault, heightDefault}) => {
 
 export {
     getStageDimensions,
+    getMinWidth,
     resolveStageSize,
     stageSizeToTransform
 };

@@ -165,7 +165,7 @@ class SoundEditor extends React.Component {
             )
             .catch(e => {
                 // Encoding failed, or the sound was too large to save so edit is rejected
-                log.error(`Encountered error while trying to encode sound update: ${e}`);
+                log.error(`Encountered error while trying to encode sound update: ${e.message}`);
                 return false; // Edit was not applied
             });
     }
@@ -277,7 +277,13 @@ class SoundEditor extends React.Component {
         const endIndex = this.state.trimEnd === null ?
             numChunks - 1 : Math.ceil(this.state.trimEnd * numChunks);
         const trimChunks = this.state.chunkLevels.slice(startIndex, endIndex);
-        return Math.max(...trimChunks) > MAX_RMS;
+        let max = 0;
+        for (const i of trimChunks) {
+            if (i > max) {
+                max = i;
+            }
+        }
+        return max > MAX_RMS;
     }
     getUndoItem () {
         return {
@@ -349,7 +355,7 @@ class SoundEditor extends React.Component {
                 if (newRate === buffer.sampleRate / 2) {
                     return resolve(dropEveryOtherSample(buffer));
                 }
-                return reject('Could not resample');
+                return reject(new Error('Could not resample'));
             }
             const source = offlineContext.createBufferSource();
             const audioBuffer = offlineContext.createBuffer(1, buffer.samples.length, buffer.sampleRate);
@@ -432,6 +438,10 @@ class SoundEditor extends React.Component {
         const {effectTypes} = AudioEffects;
         return (
             <SoundEditorComponent
+                isStereo={this.props.isStereo}
+                duration={this.props.duration}
+                size={this.props.size}
+                sampleRate={this.props.sampleRate}
                 canPaste={this.state.copyBuffer !== null}
                 canRedo={this.redoStack.length > 0}
                 canUndo={this.undoStack.length > 0}
@@ -469,6 +479,9 @@ class SoundEditor extends React.Component {
 }
 
 SoundEditor.propTypes = {
+    isStereo: PropTypes.bool,
+    duration: PropTypes.number,
+    size: PropTypes.number,
     isFullScreen: PropTypes.bool,
     name: PropTypes.string.isRequired,
     sampleRate: PropTypes.number,
@@ -485,6 +498,9 @@ const mapStateToProps = (state, {soundIndex}) => {
     const sound = state.scratchGui.vm.editingTarget.sprite.sounds[index];
     const audioBuffer = state.scratchGui.vm.getSoundBuffer(index);
     return {
+        isStereo: audioBuffer.numberOfChannels !== 1,
+        duration: sound.sampleCount / sound.rate,
+        size: sound.asset ? sound.asset.data.byteLength : 0,
         soundId: sound.soundId,
         sampleRate: audioBuffer.sampleRate,
         samples: audioBuffer.getChannelData(0),

@@ -132,8 +132,8 @@ class ListMonitor extends React.Component {
             const dx = newPosition.x - this.initialPosition.x;
             const dy = newPosition.y - this.initialPosition.y;
             this.setState({
-                width: Math.max(Math.min(this.initialWidth + dx, 480), 100),
-                height: Math.max(Math.min(this.initialHeight + dy, 360), 60)
+                width: Math.max(Math.min(this.initialWidth + dx, this.props.customStageSize.width), 100),
+                height: Math.max(Math.min(this.initialHeight + dy, this.props.customStageSize.height), 60)
             });
         };
 
@@ -185,6 +185,10 @@ class ListMonitor extends React.Component {
 ListMonitor.propTypes = {
     height: PropTypes.number,
     id: PropTypes.string,
+    customStageSize: PropTypes.shape({
+        width: PropTypes.number,
+        height: PropTypes.number
+    }),
     targetId: PropTypes.string,
     value: PropTypes.oneOfType([
         PropTypes.number,
@@ -196,6 +200,9 @@ ListMonitor.propTypes = {
     y: PropTypes.number
 };
 
-const mapStateToProps = state => ({vm: state.scratchGui.vm});
+const mapStateToProps = state => ({
+    customStageSize: state.scratchGui.customStageSize,
+    vm: state.scratchGui.vm
+});
 
 export default connect(mapStateToProps)(ListMonitor);

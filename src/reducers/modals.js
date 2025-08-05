@@ -2,7 +2,6 @@ const OPEN_MODAL = 'scratch-gui/modals/OPEN_MODAL';
 const CLOSE_MODAL = 'scratch-gui/modals/CLOSE_MODAL';
 
 const MODAL_BACKDROP_LIBRARY = 'backdropLibrary';
-const MODAL_CAMERA_CAPTURE = 'cameraCapture';
 const MODAL_COSTUME_LIBRARY = 'costumeLibrary';
 const MODAL_EXTENSION_LIBRARY = 'extensionLibrary';
 const MODAL_LOADING_PROJECT = 'loadingProject';
@@ -12,10 +11,12 @@ const MODAL_SPRITE_LIBRARY = 'spriteLibrary';
 const MODAL_SOUND_RECORDER = 'soundRecorder';
 const MODAL_CONNECTION = 'connectionModal';
 const MODAL_TIPS_LIBRARY = 'tipsLibrary';
+const MODAL_USERNAME = 'usernameModal';
+const MODAL_SETTINGS = 'settingsModal';
+const MODAL_CUSTOM_EXTENSION = 'customExtensionModal';
 
 const initialState = {
     [MODAL_BACKDROP_LIBRARY]: false,
-    [MODAL_CAMERA_CAPTURE]: false,
     [MODAL_COSTUME_LIBRARY]: false,
     [MODAL_EXTENSION_LIBRARY]: false,
     [MODAL_LOADING_PROJECT]: false,
@@ -24,7 +25,10 @@ const initialState = {
     [MODAL_SPRITE_LIBRARY]: false,
     [MODAL_SOUND_RECORDER]: false,
     [MODAL_CONNECTION]: false,
-    [MODAL_TIPS_LIBRARY]: false
+    [MODAL_TIPS_LIBRARY]: false,
+    [MODAL_USERNAME]: false,
+    [MODAL_SETTINGS]: false,
+    [MODAL_CUSTOM_EXTENSION]: false
 };
 
 const reducer = function (state, action) {
@@ -57,9 +61,6 @@ const closeModal = function (modal) {
 const openBackdropLibrary = function () {
     return openModal(MODAL_BACKDROP_LIBRARY);
 };
-const openCameraCapture = function () {
-    return openModal(MODAL_CAMERA_CAPTURE);
-};
 const openCostumeLibrary = function () {
     return openModal(MODAL_COSTUME_LIBRARY);
 };
@@ -87,11 +88,17 @@ const openConnectionModal = function () {
 const openTipsLibrary = function () {
     return openModal(MODAL_TIPS_LIBRARY);
 };
+const openUsernameModal = function () {
+    return openModal(MODAL_USERNAME);
+};
+const openSettingsModal = function () {
+    return openModal(MODAL_SETTINGS);
+};
+const openCustomExtensionModal = function () {
+    return openModal(MODAL_CUSTOM_EXTENSION);
+};
 const closeBackdropLibrary = function () {
     return closeModal(MODAL_BACKDROP_LIBRARY);
-};
-const closeCameraCapture = function () {
-    return closeModal(MODAL_CAMERA_CAPTURE);
 };
 const closeCostumeLibrary = function () {
     return closeModal(MODAL_COSTUME_LIBRARY);
@@ -120,11 +127,19 @@ const closeTipsLibrary = function () {
 const closeConnectionModal = function () {
     return closeModal(MODAL_CONNECTION);
 };
+const closeUsernameModal = function () {
+    return closeModal(MODAL_USERNAME);
+};
+const closeSettingsModal = function () {
+    return closeModal(MODAL_SETTINGS);
+};
+const closeCustomExtensionModal = function () {
+    return closeModal(MODAL_CUSTOM_EXTENSION);
+};
 export {
     reducer as default,
     initialState as modalsInitialState,
     openBackdropLibrary,
-    openCameraCapture,
     openCostumeLibrary,
     openExtensionLibrary,
     openLoadingProject,
@@ -134,8 +149,10 @@ export {
     openTelemetryModal,
     openTipsLibrary,
     openConnectionModal,
+    openUsernameModal,
+    openSettingsModal,
+    openCustomExtensionModal,
     closeBackdropLibrary,
-    closeCameraCapture,
     closeCostumeLibrary,
     closeExtensionLibrary,
     closeLoadingProject,
@@ -144,5 +161,8 @@ export {
     closeSoundRecorder,
     closeTelemetryModal,
     closeTipsLibrary,
-    closeConnectionModal
+    closeConnectionModal,
+    closeUsernameModal,
+    closeSettingsModal,
+    closeCustomExtensionModal
 };

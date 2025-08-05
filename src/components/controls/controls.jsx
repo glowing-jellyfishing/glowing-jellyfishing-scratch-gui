@@ -7,6 +7,7 @@ import GreenFlag from '../green-flag/green-flag.jsx';
 import StopAll from '../stop-all/stop-all.jsx';
 import TurboMode from '../turbo-mode/turbo-mode.jsx';
 import FramerateIndicator from '../tw-framerate-indicator/framerate-indicator.jsx';
+import {STAGE_SIZE_MODES} from '../../lib/layout-constants.js';
 
 import styles from './controls.css';
 
@@ -32,6 +33,8 @@ const Controls = function (props) {
         onStopAllClick,
         turbo,
         framerate,
+        interpolation,
+        isSmall,
         ...componentProps
     } = props;
     return (
@@ -50,9 +53,14 @@ const Controls = function (props) {
                 onClick={onStopAllClick}
             />
             {turbo ? (
-                <TurboMode />
+                <TurboMode isSmall={isSmall} />
             ) : null}
-            <FramerateIndicator framerate={framerate} />
+            {!isSmall && (
+                <FramerateIndicator
+                    framerate={framerate}
+                    interpolation={interpolation}
+                />
+            )}
         </div>
     );
 };
@@ -64,12 +72,15 @@ Controls.propTypes = {
     onGreenFlagClick: PropTypes.func.isRequired,
     onStopAllClick: PropTypes.func.isRequired,
     framerate: PropTypes.number,
+    interpolation: PropTypes.bool,
+    isSmall: PropTypes.bool,
     turbo: PropTypes.bool
 };
 
 Controls.defaultProps = {
     active: false,
-    turbo: false
+    turbo: false,
+    isSmall: false
 };
 
 export default injectIntl(Controls);

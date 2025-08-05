@@ -3,7 +3,7 @@
 
 .question-container {
     margin: $space;
-    border: 1px solid $ui-black-transparent;
+    border: 1px solid $ui-black-transparent-default;
     border-radius: $space;
     border-width: 2px;
     padding: 1rem;
@@ -14,13 +14,24 @@
     font-size: 0.75rem;
     font-weight: bold;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    color: $text-primary;
+    color: $text-primary-light;
     padding-bottom: $space;
 }
 
 .question-input {
     display: flex; /* Keeps the input from going outside this container */
     position: relative;
+}
+
+/* tw: input should not look different in dark mode */
+[theme="dark"] .question-input input {
+    color: $text-primary-light;
+    background: $ui-secondary-light;
+    border-color: $ui-tertiary-light;
+}
+[theme="dark"] .question-input input:hover,
+[theme="dark"] .question-input input:focus {
+    border-color: $motion-primary;
 }
 
 .question-submit-button {

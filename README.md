@@ -2,17 +2,37 @@ scratch-gui modified for use in [TurboWarp](https://turbowarp.org/)
 
 ## Setup
 
-See https://github.com/TurboWarp/scratch-gui/wiki/Getting-Started to setup the complete TurboWarp environment.
+See https://docs.turbowarp.org/development/getting-started to setup the complete TurboWarp environment.
 
 If you just want to play with the GUI then it's the same process as upstream scratch-gui.
+
+## License
+
+TurboWarp's modifications to Scratch are licensed under the GNU General Public License v3.0. See LICENSE or https://www.gnu.org/licenses/ for details.
+
+The following is the original license for scratch-gui, which we are required to retain. This is NOT the license of this project.
+
+```
+Copyright (c) 2016, Massachusetts Institute of Technology
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+src/lib/default-project/dango.svg is based on [Twemoji](https://twemoji.twitter.com/) and is licensed under CC BY 4.0 https://creativecommons.org/licenses/by/4.0/
 
 <!--
 
 # scratch-gui
 #### Scratch GUI is a set of React components that comprise the interface for creating and running Scratch 3.0 projects
-
-[![Build Status](https://travis-ci.com/LLK/scratch-gui.svg?token=Yfq2ryN1BwaxDME69Lnc&branch=master)](https://travis-ci.com/LLK/scratch-gui)
-[![Greenkeeper badge](https://badges.greenkeeper.io/LLK/scratch-gui.svg)](https://greenkeeper.io/)
 
 ## Installation
 This requires you to have Git and Node.js installed.
@@ -61,7 +81,7 @@ Here's how to link your local `scratch-gui` code to another project's `node_modu
 2. From the top level of each repository (such as `scratch-www`) that depends on `scratch-gui`:
     1. Make sure you have run `npm install`
     2. Run `npm link scratch-gui`
-    3. Build or run the repositoriy
+    3. Build or run the repository
 
 #### Using `npm run watch`
 
@@ -70,7 +90,7 @@ Instead of `BUILD_MODE=dist npm run build`, you can use `BUILD_MODE=dist npm run
 #### Oh no! It didn't work!
 
 If you can't get linking to work right, try:
-* Follow the recipe above step by step and don't change the order. It is especially important to run `npm install` _before_ `npm link`, because installing after the linking will reset the linking.
+* Follow the recipe above step by step and don't change the order. It is especially important to run `npm install` _before_ `npm link` as installing after the linking will reset the linking.
 * Make sure the repositories are siblings on your machine's file tree, like `.../.../MY_SCRATCH_DEV_DIRECTORY/scratch-gui/` and `.../.../MY_SCRATCH_DEV_DIRECTORY/scratch-www/`.
 * Consistent node.js version: If you have multiple Terminal tabs or windows open for the different Scratch repositories, make sure to use the same node version in all of them.
 * If nothing else works, unlink the repositories by running `npm unlink` in both, and start over.
@@ -84,7 +104,7 @@ See [jest cli docs](https://facebook.github.io/jest/docs/en/cli.html#content) fo
 
 ### Running tests
 
-*NOTE: If you're a windows user, please run these scripts in Windows `cmd.exe`  instead of Git Bash/MINGW64.*
+*NOTE: If you're a Windows user, please run these scripts in Windows `cmd.exe`  instead of Git Bash/MINGW64.*
 
 Before running any tests, make sure you have run `npm install` from this (scratch-gui) repository's top level.
 
@@ -115,7 +135,7 @@ $(npm bin)/jest --runInBand test/unit/components/button.test.jsx
 
 #### Running integration tests
 
-Integration tests use a headless browser to manipulate the actual html and javascript that the repo
+Integration tests use a headless browser to manipulate the actual HTML and javascript that the repo
 produces. You will not see this activity (though you can hear it when sounds are played!).
 
 Note that integration tests require you to first create a build that can be loaded in a browser:
@@ -146,7 +166,7 @@ USE_HEADLESS=no $(npm bin)/jest --runInBand test/integration/backpack.test.js
 
 ### Ignoring optional dependencies
 
-When running `npm install`, you can get warnings about optionsl dependencies:
+When running `npm install`, you can get warnings about optional dependencies:
 
 ```
 npm WARN optional Skipping failed optional dependency /chokidar/fsevents:
@@ -163,7 +183,7 @@ Further reading: [Stack Overflow](https://stackoverflow.com/questions/36725181/n
 
 ### Resolving dependencies
 
-When installing for the first time, you can get warnings which need to be resolved:
+When installing for the first time, you can get warnings that need to be resolved:
 
 ```
 npm WARN eslint-config-scratch@5.0.0 requires a peer of babel-eslint@^8.0.1 but none was installed.
@@ -178,7 +198,7 @@ You can check which versions are available:
 npm view react-intl-redux@0.* version
 ```
 
-You will neet do install the required version:
+You will need to install the required version:
 
 ```
 npm install  --no-optional --save-dev react-intl-redux@^0.7
@@ -244,7 +264,7 @@ These are names for the action which causes a state change. Some examples are:
 
 ### How transitions relate to loading states
 
-As this diagram of the project state machine shows, various transition actions can move us from one loading state to another:
+Like this diagram of the project state machine shows, various transition actions can move us from one loading state to another:
 
 ![Project state diagram](docs/project_state_diagram.svg)
 
@@ -254,7 +274,7 @@ _Note: for clarity, the diagram above excludes states and transitions relating t
 
 Here's an example of how states transition.
 
-Suppose a user clicks on a project, and the page starts to load with url https://scratch.mit.edu/projects/123456 .
+Suppose a user clicks on a project, and the page starts to load with URL https://scratch.mit.edu/projects/123456 .
 
 Here's what will happen in the project state machine:
 

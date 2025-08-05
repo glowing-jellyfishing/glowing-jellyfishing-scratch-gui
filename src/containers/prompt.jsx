@@ -3,6 +3,7 @@ import React from 'react';
 import bindAll from 'lodash.bindall';
 import PromptComponent from '../components/prompt/prompt.jsx';
 import VM from 'scratch-vm';
+import {SCRATCH_MAX_CLOUD_VARIABLES} from '../lib/tw-cloud-limits.js';
 
 class Prompt extends React.Component {
     constructor (props) {
@@ -16,6 +17,10 @@ class Prompt extends React.Component {
             'handleCloudVariableOptionChange'
         ]);
         this.state = {
+            isAddingCloudVariableScratchSafe: (
+                props.vm &&
+                props.vm.runtime.getNumberOfCloudVariables() < SCRATCH_MAX_CLOUD_VARIABLES
+            ) || false,
             inputValue: '',
             globalSelected: true,
             cloudSelected: false,
@@ -55,11 +60,13 @@ class Prompt extends React.Component {
     render () {
         return (
             <PromptComponent
+                isAddingCloudVariableScratchSafe={this.state.isAddingCloudVariableScratchSafe}
                 canAddCloudVariable={this.state.canAddCloudVariable}
                 cloudSelected={this.state.cloudSelected}
                 defaultValue={this.props.defaultValue}
                 globalSelected={this.state.globalSelected}
                 isStage={this.props.isStage}
+                showListMessage={this.props.showListMessage}
                 label={this.props.label}
                 showCloudOption={this.props.showCloudOption}
                 showVariableOptions={this.props.showVariableOptions}
@@ -79,6 +86,7 @@ class Prompt extends React.Component {
 Prompt.propTypes = {
     defaultValue: PropTypes.string,
     isStage: PropTypes.bool.isRequired,
+    showListMessage: PropTypes.bool.isRequired,
     label: PropTypes.string.isRequired,
     onCancel: PropTypes.func.isRequired,
     onOk: PropTypes.func.isRequired,

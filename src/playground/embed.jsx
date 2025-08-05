@@ -3,11 +3,13 @@ import './import-first';
 import ReactDOM from 'react-dom';
 import React from 'react';
 import {compose} from 'redux';
+import {setAppElement} from 'react-modal';
 import AppStateHOC from '../lib/app-state-hoc.jsx';
 import TWEmbedFullScreenHOC from '../lib/tw-embed-fullscreen-hoc.jsx';
 import TWStateManagerHOC from '../lib/tw-state-manager-hoc.jsx';
 import TWFullscreenResizerHOC from '../lib/tw-fullscreen-resizer-hoc.jsx';
 import setupPostMessageAPI from '../lib/tw-postmessage-api';
+import runAddons from '../addons/entry';
 
 import GUI from './render-gui.jsx';
 import appTarget from './app-target';
@@ -25,10 +27,11 @@ const getProjectId = () => {
     if (pathMatch !== null) {
         return pathMatch[pathMatch.length - 1];
     }
-    return null;
+    return '0';
 };
 
 const projectId = getProjectId();
+const urlParams = new URLSearchParams(location.search);
 
 let vm;
 
@@ -52,10 +55,10 @@ const onProjectLoaded = () => {
 const WrappedGUI = compose(
     AppStateHOC,
     TWStateManagerHOC,
-    TWEmbedFullScreenHOC,
-    TWFullscreenResizerHOC
+    TWEmbedFullScreenHOC
 )(GUI);
 
+setAppElement(appTarget);
 ReactDOM.render(<WrappedGUI
     isEmbedded
     projectId={projectId}
@@ -63,3 +66,7 @@ ReactDOM.render(<WrappedGUI
     onProjectLoaded={onProjectLoaded}
     routingStyle="none"
 />, appTarget);
+
+if (urlParams.has('addons')) {
+    runAddons();
+}

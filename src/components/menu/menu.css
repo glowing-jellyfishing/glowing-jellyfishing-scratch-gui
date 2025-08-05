@@ -12,14 +12,10 @@
     /* max-width: 260px; */
     overflow: visible;
     color: $ui-white;
-    box-shadow: 0 8px 8px 0 $ui-black-transparent;
+    box-shadow: 0 8px 8px 0 $ui-black-transparent-default;
 }
-
-/* tw: dark theme */
-@media (prefers-color-scheme: dark) {
-    .menu {
-        background-color: $motion-primary-dark;
-    }
+[theme="dark"] .menu {
+    background-color: $motion-primary-dark;
 }
 
 .menu.left {

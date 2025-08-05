@@ -55,54 +55,18 @@ const projectData = translateFunction => {
                 variables: {},
                 lists: {},
                 broadcasts: {},
-                blocks: {
-                    'Z2l`f?]oj|=Nq/GH@G_u': {
-                        opcode: 'control_if_else',
-                        next: null,
-                        parent: null,
-                        inputs: {
-                            CONDITION: [2, 'Fj5[gB=S0qJiUu$/!nym'],
-                            SUBSTACK: [1, null],
-                            SUBSTACK2: [1, null]
-                        },
-                        fields: {},
-                        shadow: false,
-                        topLevel: true,
-                        x: 302,
-                        y: 250,
-                        comment: 'UgZfouDT0`j;EW7Y3N2]'
-                    },
-                    'Fj5[gB=S0qJiUu$/!nym': {
-                        opcode: 'argument_reporter_boolean',
-                        next: null,
-                        parent: 'Z2l`f?]oj|=Nq/GH@G_u',
-                        inputs: {},
-                        fields: {VALUE: ['is compiled?', null]},
-                        shadow: false,
-                        topLevel: false
-                    }
-                },
-                comments: {
-                    'UgZfouDT0`j;EW7Y3N2]': {
-                        blockId: 'Z2l`f?]oj|=Nq/GH@G_u',
-                        x: 685.1870417418297,
-                        y: 258.07407407407516,
-                        width: 410.370361328125,
-                        height: 201.48150634765625,
-                        minimized: false,
-                        text: 'This is how you detect TurboWarp.\n\nSee here for more info:\nhttps://scratch.mit.edu/projects/414716080/'
-                    }
-                },
+                blocks: {},
+                comments: {},
                 currentCostume: 0,
                 costumes: [
                     {
-                        assetId: '14e46ec3e2ba471c2adfe8f119052307',
+                        assetId: '592bae6f8bb9c8d88401b54ac431f7b6',
                         name: translator(messages.costume, {index: 1}),
                         bitmapResolution: 1,
-                        md5ext: '14e46ec3e2ba471c2adfe8f119052307.svg',
+                        md5ext: '592bae6f8bb9c8d88401b54ac431f7b6.svg',
                         dataFormat: 'svg',
-                        rotationCenterX: 0,
-                        rotationCenterY: 0
+                        rotationCenterX: 44,
+                        rotationCenterY: 44
                     }
                 ],
                 sounds: [],

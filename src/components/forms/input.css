@@ -30,14 +30,23 @@
     white-space: nowrap;
     min-width: 0;
 }
+[theme="dark"] .input-form {
+    background-color: $ui-secondary;
+}
 
 .input-form:hover {
     border-color: $motion-primary;
+}
+[theme="dark"] .input-form:hover {
+    border-color: $motion-primary-dark;
 }
 
 .input-form:focus {
     border-color: $motion-primary;
     box-shadow: 0 0 0 0.25rem $motion-transparent;
+}
+[theme="dark"] .input-form:focus {
+    border-color: $motion-primary-dark;
 }
 
 .input-small {

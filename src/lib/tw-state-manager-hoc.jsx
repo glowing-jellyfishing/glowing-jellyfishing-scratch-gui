@@ -10,10 +10,6 @@ import {
     setUsername
 } from '../reducers/tw';
 import {
-    openLoadingProject,
-    closeLoadingProject
-} from '../reducers/modals';
-import {
     defaultProjectId,
     setProjectId
 } from '../reducers/project-state';
@@ -21,18 +17,20 @@ import {
     setPlayer,
     setFullScreen
 } from '../reducers/mode';
-import * as progressMonitor from '../components/loader/tw-progress-monitor';
+import {generateRandomUsername} from './tw-username';
+import {setSearchParams} from './tw-navigation-utils';
+import {defaultStageSize} from '../reducers/custom-stage-size';
 
 /* eslint-disable no-alert */
 
 const messages = defineMessages({
     invalidFPS: {
-        defaultMessage: 'fps URL parameter is invalid',
+        defaultMessage: '"fps" URL parameter is invalid',
         description: 'Alert displayed when fps URL parameter is invalid',
         id: 'tw.invalidParameters.fps'
     },
     invalidClones: {
-        defaultMessage: 'clone URL parameter is invalid',
+        defaultMessage: '"clone" URL parameter is invalid',
         description: 'Alert displayed when clones URL parameter is invalid',
         id: 'tw.invalidParameters.clones'
     }
@@ -92,7 +90,8 @@ class HashRouter extends Router {
     }
 
     generateURL ({projectId}) {
-        return `${location.pathname}${location.search}#${projectId}`;
+        const hashQuery = location.hash.split('?')[1];
+        return `${location.pathname}${location.search}#${projectId}${hashQuery ? `?${hashQuery}` : ''}`;
     }
 }
 
@@ -123,7 +122,11 @@ class FileHashRouter extends HashRouter {
         let newHash = '';
 
         if (projectId !== '0') {
-            newHash = `#${projectId}`;
+            newHash = projectId;
+        }
+        const hashQuery = location.hash.split('?')[1];
+        if (hashQuery) {
+            newHash += `?${hashQuery}`;
         }
 
         if (isFullScreen) {
@@ -134,9 +137,19 @@ class FileHashRouter extends HashRouter {
             newPathname = this.editorPath;
         }
 
-        return `${newPathname}${location.search}${newHash}`;
+        return `${newPathname}${location.search}${newHash ? `#${newHash}` : ''}`;
     }
 }
+
+const getCanonicalLinkElement = () => {
+    let el = document.querySelector('link[rel=canonical]');
+    if (!el) {
+        el = document.createElement('link');
+        el.rel = 'canonical';
+        document.head.appendChild(el);
+    }
+    return el;
+};
 
 class WildcardRouter extends Router {
     constructor (callbacks) {
@@ -147,9 +160,11 @@ class WildcardRouter extends Router {
     onhashchange () {
         const hashProjectId = readHashProjectId();
         if (hashProjectId) {
-            this.onSetProjectId(hashProjectId);
-            // Completely remove the hash
-            history.replaceState(null, null, `${location.pathname}${location.search}`);
+            const ok = this.onSetProjectId(hashProjectId);
+            if (ok) {
+                // Completely remove the hash
+                history.replaceState(null, null, `${location.pathname}${location.search}`);
+            }
         } else {
             // Do not detect page type here as it is already setup by index.html, editor.html, etc.
             this.parseURL(false);
@@ -209,6 +224,8 @@ class WildcardRouter extends Router {
         }
 
         const path = `${this.root}${parts.join('/')}`;
+        const canonical = `${location.origin}${this.root}${projectId === '0' ? '' : projectId}`;
+        getCanonicalLinkElement().href = canonical;
 
         return `${path}${location.search}${location.hash}`;
     }
@@ -259,7 +276,10 @@ const TWStateManager = function (WrappedComponent) {
             super(props);
             bindAll(this, [
                 'handleHashChange',
-                'handlePopState'
+                'handlePopState',
+                'onSetProjectId',
+                'onSetIsPlayerOnly',
+                'onSetIsFullScreen'
             ]);
         }
         componentDidMount () {
@@ -276,35 +296,45 @@ const TWStateManager = function (WrappedComponent) {
                 this.props.vm.setFramerate(60);
             }
 
+            if (urlParams.has('interpolate')) {
+                this.props.vm.setInterpolation(true);
+            }
+
             if (urlParams.has('username')) {
                 const username = urlParams.get('username');
                 // Do not save username when loaded from URL
                 this.doNotPersistUsername = username;
                 this.props.onSetUsername(username);
             } else {
-                const persistentUsername = getLocalStorage(USERNAME_KEY);
+                const persistentUsername = this.props.isEmbedded ? null : getLocalStorage(USERNAME_KEY);
                 if (persistentUsername === null) {
-                    const randomNumber = Math.random().toString();
-                    const randomId = randomNumber.substr(2, 6);
-                    const randomUsername = `player${randomId}`;
-                    setLocalStorage(USERNAME_KEY, randomUsername);
+                    const randomUsername = generateRandomUsername();
                     this.props.onSetUsername(randomUsername);
+                    if (this.props.isEmbedded) {
+                        this.doNotPersistUsername = randomUsername;
+                    }
                 } else {
                     this.props.onSetUsername(persistentUsername);
                 }
             }
 
             if (urlParams.has('hqpen')) {
-                this.props.vm.renderer.setUseHighQualityPen(true);
+                this.props.vm.renderer.setUseHighQualityRender(true);
             }
 
             if (urlParams.has('turbo')) {
                 this.props.vm.setTurboMode(true);
             }
 
-            if (urlParams.has('stuck')) {
+            if (urlParams.has('stuck') || urlParams.has('warp_timer')) {
                 this.props.vm.setCompilerOptions({
                     warpTimer: true
+                });
+            }
+
+            if (urlParams.has('nocompile')) {
+                this.props.vm.setCompilerOptions({
+                    enabled: false
                 });
             }
 
@@ -319,31 +349,26 @@ const TWStateManager = function (WrappedComponent) {
                 }
             }
 
-            if (urlParams.has('project_url')) {
-                const projectUrl = urlParams.get('project_url');
-                this.props.onProjectFetchStarted();
-                progressMonitor.fetchWithProgress(projectUrl)
-                    .then(res => {
-                        if (res.status !== 200) {
-                            throw new Error(`Unexpected status code: ${res.status}`);
-                        }
-                        return res.arrayBuffer();
-                    })
-                    .then(arrayBuffer => this.props.vm.loadProject(arrayBuffer))
-                    .then(() => {
-                        this.props.onProjectFetchFinished();
-                        this.props.vm.renderer.draw();
-                    })
-                    .catch(err => {
-                        // eslint-disable-next-line no-alert
-                        alert(`cannot load project: ${err}`);
-                    });
+            if (urlParams.has('offscreen')) {
+                this.props.vm.setRuntimeOptions({
+                    fencing: false
+                });
+            }
+
+            if (urlParams.has('limitless')) {
+                this.props.vm.setRuntimeOptions({
+                    miscLimits: false
+                });
+            }
+
+            for (const extension of urlParams.getAll('extension')) {
+                this.props.vm.extensionManager.loadExtensionURL(extension);
             }
 
             const routerCallbacks = {
-                onSetProjectId: this.props.onSetProjectId,
-                onSetIsPlayerOnly: this.props.onSetIsPlayerOnly,
-                onSetIsFullScreen: this.props.onSetIsFullScreen
+                onSetProjectId: this.onSetProjectId,
+                onSetIsPlayerOnly: this.onSetIsPlayerOnly,
+                onSetIsFullScreen: this.onSetIsFullScreen
             };
             this.router = createRouter(this.props.routingStyle, routerCallbacks);
             this.router.onhashchange();
@@ -372,6 +397,88 @@ const TWStateManager = function (WrappedComponent) {
                     history.pushState(null, null, newPath);
                 }
             }
+
+            if (
+                this.props.customStageSize !== prevProps.customStageSize ||
+                this.props.runtimeOptions !== prevProps.runtimeOptions ||
+                this.props.compilerOptions !== prevProps.compilerOptions ||
+                this.props.highQualityPen !== prevProps.highQualityPen ||
+                this.props.framerate !== prevProps.framerate ||
+                this.props.interpolation !== prevProps.interpolation ||
+                this.props.turbo !== prevProps.turbo
+            ) {
+                const searchParams = new URLSearchParams(location.search);
+                const runtimeOptions = this.props.runtimeOptions;
+                const compilerOptions = this.props.compilerOptions;
+
+                // Always remove legacy parameter
+                searchParams.delete('60fps');
+
+                const {width, height} = this.props.customStageSize;
+                if (width === defaultStageSize.width && height === defaultStageSize.height) {
+                    searchParams.delete('size');
+                } else {
+                    searchParams.set('size', `${width}x${height}`);
+                }
+
+                if (this.props.framerate === 30) {
+                    searchParams.delete('fps');
+                } else {
+                    searchParams.set('fps', this.props.framerate);
+                }
+
+                if (this.props.interpolation) {
+                    searchParams.set('interpolate', '');
+                } else {
+                    searchParams.delete('interpolate');
+                }
+
+                if (this.props.turbo) {
+                    searchParams.set('turbo', '');
+                } else {
+                    searchParams.delete('turbo');
+                }
+
+                if (this.props.highQualityPen) {
+                    searchParams.set('hqpen', '');
+                } else {
+                    searchParams.delete('hqpen');
+                }
+
+                if (compilerOptions.enabled) {
+                    searchParams.delete('nocompile');
+                }
+
+                if (this.props.isPlayerOnly) {
+                    if (compilerOptions.warpTimer) {
+                        searchParams.set('stuck', '');
+                    } else {
+                        searchParams.delete('stuck');
+                    }
+                } else {
+                    // Leave ?stuck as-is when in editor
+                }
+
+                if (runtimeOptions.maxClones === 300) {
+                    searchParams.delete('clones');
+                } else {
+                    searchParams.set('clones', runtimeOptions.maxClones);
+                }
+
+                if (runtimeOptions.fencing) {
+                    searchParams.delete('offscreen');
+                } else {
+                    searchParams.set('offscreen', '');
+                }
+
+                if (runtimeOptions.miscLimits) {
+                    searchParams.delete('limitless');
+                } else {
+                    searchParams.set('limitless', '');
+                }
+
+                setSearchParams(searchParams);
+            }
         }
         componentWillUnmount () {
             window.removeEventListener('hashchange', this.handleHashChange);
@@ -383,13 +490,39 @@ const TWStateManager = function (WrappedComponent) {
         handlePopState () {
             this.router.onpathchange();
         }
+        onSetProjectId (id) {
+            if (`${id}` === `${this.props.reduxProjectId}`) {
+                return true;
+            }
+            if (this.props.projectChanged) {
+                if (!confirm('Are you sure you want to switch project?')) {
+                    return false;
+                }
+            }
+            this.props.onSetProjectId(id);
+            return true;
+        }
+        onSetIsPlayerOnly (isPlayerOnly) {
+            this.props.onSetIsPlayerOnly(isPlayerOnly);
+        }
+        onSetIsFullScreen (isFullScreen) {
+            this.props.onSetIsFullScreen(isFullScreen);
+        }
         render () {
             const {
                 /* eslint-disable no-unused-vars */
+                intl,
+                customStageSize,
                 isFullScreen,
                 isPlayerOnly,
-                onProjectFetchFinished,
-                onProjectFetchStarted,
+                isEmbedded,
+                projectChanged,
+                compilerOptions,
+                runtimeOptions,
+                highQualityPen,
+                framerate,
+                interpolation,
+                turbo,
                 onSetIsFullScreen,
                 onSetIsPlayerOnly,
                 onSetProjectId,
@@ -410,10 +543,28 @@ const TWStateManager = function (WrappedComponent) {
     }
     StateManagerComponent.propTypes = {
         intl: intlShape,
+        customStageSize: PropTypes.shape({
+            width: PropTypes.number,
+            height: PropTypes.number
+        }),
         isFullScreen: PropTypes.bool,
         isPlayerOnly: PropTypes.bool,
-        onProjectFetchFinished: PropTypes.func,
-        onProjectFetchStarted: PropTypes.func,
+        isEmbedded: PropTypes.bool,
+        projectChanged: PropTypes.bool,
+        projectId: PropTypes.string,
+        compilerOptions: PropTypes.shape({
+            enabled: PropTypes.bool,
+            warpTimer: PropTypes.bool
+        }),
+        runtimeOptions: PropTypes.shape({
+            miscLimits: PropTypes.bool,
+            fencing: PropTypes.bool,
+            maxClones: PropTypes.number
+        }),
+        highQualityPen: PropTypes.bool,
+        framerate: PropTypes.number,
+        interpolation: PropTypes.bool,
+        turbo: PropTypes.bool,
         onSetIsFullScreen: PropTypes.func,
         onSetIsPlayerOnly: PropTypes.func,
         onSetProjectId: PropTypes.func,
@@ -427,15 +578,22 @@ const TWStateManager = function (WrappedComponent) {
         routingStyle: process.env.ROUTING_STYLE
     };
     const mapStateToProps = state => ({
+        customStageSize: state.scratchGui.customStageSize,
         isFullScreen: state.scratchGui.mode.isFullScreen,
         isPlayerOnly: state.scratchGui.mode.isPlayerOnly,
+        isEmbedded: state.scratchGui.mode.isEmbedded,
+        projectChanged: state.scratchGui.projectChanged,
         reduxProjectId: state.scratchGui.projectState.projectId,
+        compilerOptions: state.scratchGui.tw.compilerOptions,
+        runtimeOptions: state.scratchGui.tw.runtimeOptions,
+        highQualityPen: state.scratchGui.tw.highQualityPen,
+        framerate: state.scratchGui.tw.framerate,
+        interpolation: state.scratchGui.tw.interpolation,
+        turbo: state.scratchGui.vmStatus.turbo,
         username: state.scratchGui.tw.username,
         vm: state.scratchGui.vm
     });
     const mapDispatchToProps = dispatch => ({
-        onProjectFetchFinished: () => dispatch(closeLoadingProject()),
-        onProjectFetchStarted: () => dispatch(openLoadingProject()),
         onSetIsFullScreen: isFullScreen => dispatch(setFullScreen(isFullScreen)),
         onSetIsPlayerOnly: isPlayerOnly => dispatch(setPlayer(isPlayerOnly)),
         onSetProjectId: projectId => dispatch(setProjectId(projectId)),

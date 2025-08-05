@@ -8,7 +8,6 @@ import {connect} from 'react-redux';
 import {STAGE_DISPLAY_SIZES} from '../lib/layout-constants';
 import {getEventXY} from '../lib/touch-utils';
 import VideoProvider from '../lib/video/video-provider';
-import {SVGRenderer as V2SVGAdapter} from 'scratch-svg-renderer';
 import {BitmapAdapter as V2BitmapAdapter} from 'scratch-svg-renderer';
 
 import StageComponent from '../components/stage/stage.jsx';
@@ -38,6 +37,7 @@ class Stage extends React.Component {
             'onStartDrag',
             'onStopDrag',
             'onWheel',
+            'onContextMenu',
             'updateRect',
             'questionListener',
             'setDragCanvas',
@@ -59,7 +59,17 @@ class Stage extends React.Component {
             this.canvas = this.renderer.canvas;
         } else {
             this.canvas = document.createElement('canvas');
-            this.renderer = new Renderer(this.canvas);
+            this.renderer = new Renderer(
+                this.canvas,
+                -this.props.customStageSize.width / 2,
+                this.props.customStageSize.width / 2,
+                -this.props.customStageSize.height / 2,
+                this.props.customStageSize.height / 2
+            );
+            this.props.vm.setStageSize(
+                this.props.customStageSize.width,
+                this.props.customStageSize.height
+            );
             this.props.vm.attachRenderer(this.renderer);
 
             // Only attach a video provider once because it is stateful
@@ -72,9 +82,8 @@ class Stage extends React.Component {
             this.props.vm.renderer.draw();
 
             // tw: handle changes to high quality pen
-            this.props.vm.renderer.on('UseHighQualityPenChanged', this.props.onHighQualityPenChanged);
+            this.props.vm.renderer.on('UseHighQualityRenderChanged', this.props.onHighQualityPenChanged);
         }
-        this.props.vm.attachV2SVGAdapter(new V2SVGAdapter());
         this.props.vm.attachV2BitmapAdapter(new V2BitmapAdapter());
     }
     componentDidMount () {
@@ -88,12 +97,12 @@ class Stage extends React.Component {
             this.props.isColorPicking !== nextProps.isColorPicking ||
             this.state.colorInfo !== nextState.colorInfo ||
             this.props.isFullScreen !== nextProps.isFullScreen ||
-            // tw: update when dimensions or isWindowFullScreen changes
             this.props.isWindowFullScreen !== nextProps.isWindowFullScreen ||
             this.props.dimensions !== nextProps.dimensions ||
             this.state.question !== nextState.question ||
             this.props.micIndicator !== nextProps.micIndicator ||
-            this.props.isStarted !== nextProps.isStarted;
+            this.props.isStarted !== nextProps.isStarted ||
+            this.props.customStageSize !== nextProps.customStageSize;
     }
     componentDidUpdate (prevProps) {
         if (this.props.isColorPicking && !prevProps.isColorPicking) {
@@ -119,14 +128,16 @@ class Stage extends React.Component {
         });
     }
     startColorPickingLoop () {
-        this.intervalId = setInterval(() => {
+        const callback = () => {
+            this.animationFrameId = requestAnimationFrame(callback);
             if (typeof this.pickX === 'number') {
                 this.setState({colorInfo: this.getColorInfo(this.pickX, this.pickY)});
             }
-        }, 30);
+        };
+        this.animationFrameId = requestAnimationFrame(callback);
     }
     stopColorPickingLoop () {
-        clearInterval(this.intervalId);
+        cancelAnimationFrame(this.animationFrameId);
     }
     attachMouseEvents (canvas) {
         document.addEventListener('mousemove', this.onMouseMove);
@@ -136,6 +147,7 @@ class Stage extends React.Component {
         canvas.addEventListener('mousedown', this.onMouseDown);
         canvas.addEventListener('touchstart', this.onMouseDown);
         canvas.addEventListener('wheel', this.onWheel);
+        canvas.addEventListener('contextmenu', this.onContextMenu);
     }
     detachMouseEvents (canvas) {
         document.removeEventListener('mousemove', this.onMouseMove);
@@ -145,6 +157,7 @@ class Stage extends React.Component {
         canvas.removeEventListener('mousedown', this.onMouseDown);
         canvas.removeEventListener('touchstart', this.onMouseDown);
         canvas.removeEventListener('wheel', this.onWheel);
+        canvas.removeEventListener('contextmenu', this.onContextMenu);
     }
     attachRectEvents () {
         window.addEventListener('resize', this.updateRect);
@@ -237,6 +250,7 @@ class Stage extends React.Component {
         });
         const data = {
             isDown: false,
+            button: e.button,
             x: x - this.rect.left,
             y: y - this.rect.top,
             canvasWidth: this.rect.width,
@@ -275,7 +289,8 @@ class Stage extends React.Component {
             // Immediately update the color picker info
             this.setState({colorInfo: this.getColorInfo(this.pickX, this.pickY)});
         } else {
-            if (e.button === 0 || (window.TouchEvent && e instanceof TouchEvent)) {
+            const isTouchEvent = window.TouchEvent && e instanceof TouchEvent;
+            if (e.button === 0 || isTouchEvent) {
                 this.setState({
                     mouseDown: true,
                     mouseDownPosition: mousePosition,
@@ -287,13 +302,14 @@ class Stage extends React.Component {
             }
             const data = {
                 isDown: true,
+                button: e.button,
                 x: mousePosition[0],
                 y: mousePosition[1],
                 canvasWidth: this.rect.width,
                 canvasHeight: this.rect.height
             };
             this.props.vm.postIOData('mouse', data);
-            if (e.preventDefault) {
+            if (isTouchEvent && e.preventDefault) {
                 // Prevent default to prevent touch from dragging page
                 e.preventDefault();
                 // But we do want any active input to be blurred
@@ -309,6 +325,11 @@ class Stage extends React.Component {
             deltaY: e.deltaY
         };
         this.props.vm.postIOData('mouseWheel', data);
+    }
+    onContextMenu (e) {
+        if (this.props.vm.runtime.ioDevices.mouse.usesRightClickDown) {
+            e.preventDefault();
+        }
     }
     cancelMouseDownTimeout () {
         if (this.state.mouseDownTimeoutId !== null) {
@@ -441,14 +462,16 @@ class Stage extends React.Component {
 }
 
 Stage.propTypes = {
-    // tw: High quality pen properties
     onHighQualityPenChanged: PropTypes.func,
     highQualityPen: PropTypes.bool,
-    // tw: Disable editing target changing in certain circumstances to avoid lag
+    customStageSize: PropTypes.shape({
+        width: PropTypes.number,
+        height: PropTypes.number
+    }),
     disableEditingTargetChange: PropTypes.bool,
     isColorPicking: PropTypes.bool,
     isFullScreen: PropTypes.bool.isRequired,
-    // tw: update when dimensions or isWindowFullScreen changes
+    isPlayerOnly: PropTypes.bool,
     isWindowFullScreen: PropTypes.bool,
     dimensions: PropTypes.arrayOf(PropTypes.number),
     isStarted: PropTypes.bool,
@@ -465,18 +488,16 @@ Stage.defaultProps = {
 };
 
 const mapStateToProps = state => ({
-    // tw: High quality pen property
     highQualityPen: state.scratchGui.tw.highQualityPen,
-    // tw: Disable editing target changing in certain circumstances to avoid lag
+    customStageSize: state.scratchGui.customStageSize,
     disableEditingTargetChange: (
         state.scratchGui.mode.isFullScreen ||
         state.scratchGui.mode.isEmbedded ||
         state.scratchGui.mode.isPlayerOnly
     ),
     isColorPicking: state.scratchGui.colorPicker.active,
-    // tw: embed is always considered fullscreen
     isFullScreen: state.scratchGui.mode.isFullScreen || state.scratchGui.mode.isEmbedded,
-    // tw: update when dimensions or isWindowFullScreen changes
+    isPlayerOnly: state.scratchGui.mode.isPlayerOnly,
     isWindowFullScreen: state.scratchGui.tw.isWindowFullScreen,
     dimensions: state.scratchGui.tw.dimensions,
     isStarted: state.scratchGui.vmStatus.started,

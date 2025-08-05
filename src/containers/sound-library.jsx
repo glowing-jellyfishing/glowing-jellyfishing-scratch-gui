@@ -10,7 +10,7 @@ import LibraryComponent from '../components/library/library.jsx';
 import soundIcon from '../components/library-item/lib-icon--sound.svg';
 import soundIconRtl from '../components/library-item/lib-icon--sound-rtl.svg';
 
-import soundLibraryContent from '../lib/libraries/sounds.json';
+import {getSoundLibrary} from '../lib/libraries/tw-async-libraries';
 import soundTags from '../lib/libraries/sound-tags';
 
 import {connect} from 'react-redux';
@@ -21,6 +21,19 @@ const messages = defineMessages({
         description: 'Heading for the sound library',
         id: 'gui.soundLibrary.chooseASound'
     }
+});
+
+// @todo need to use this hack to avoid library using md5 for image
+const getSoundLibraryThumbnailData = (soundLibraryContent, isRtl) => soundLibraryContent.map(sound => {
+    const {
+        md5ext,
+        ...otherData
+    } = sound;
+    return {
+        _md5: md5ext,
+        rawURL: isRtl ? soundIconRtl : soundIcon,
+        ...otherData
+    };
 });
 
 class SoundLibrary extends React.PureComponent {
@@ -50,8 +63,22 @@ class SoundLibrary extends React.PureComponent {
          * function to call when the sound ends
          */
         this.handleStop = null;
+
+        const soundLibrary = getSoundLibrary();
+        this.state = {
+            data: Array.isArray(soundLibrary) ?
+                getSoundLibraryThumbnailData(soundLibrary, this.props.isRtl) :
+                soundLibrary
+        };
     }
     componentDidMount () {
+        if (this.state.data.then) {
+            this.state.data.then(data => {
+                this.setState({
+                    data: getSoundLibraryThumbnailData(data, this.props.isRtl)
+                });
+            });
+        }
         this.audioEngine = new AudioEngine();
         this.playingSoundPromise = null;
     }
@@ -60,7 +87,8 @@ class SoundLibrary extends React.PureComponent {
     }
     onStop () {
         if (this.playingSoundPromise !== null) {
-            this.playingSoundPromise.then(soundPlayer => soundPlayer.removeListener('stop', this.onStop));
+            this.playingSoundPromise.then(soundPlayer =>
+                soundPlayer && soundPlayer.removeListener('stop', this.onStop));
             if (this.handleStop) this.handleStop();
         }
 
@@ -73,7 +101,8 @@ class SoundLibrary extends React.PureComponent {
         // normally.
         if (this.playingSoundPromise !== null) {
             // Forcing sound to stop, so stop listening for sound ending:
-            this.playingSoundPromise.then(soundPlayer => soundPlayer.removeListener('stop', this.onStop));
+            this.playingSoundPromise.then(soundPlayer =>
+                soundPlayer && soundPlayer.removeListener('stop', this.onStop));
             // Queued playback began playing before this method.
             if (this.playingSoundPromise.isPlaying) {
                 // Fetch the player from the promise and stop playback soon.
@@ -86,7 +115,7 @@ class SoundLibrary extends React.PureComponent {
                 // immediately after the sound starts playback. Stopping it
                 // immediately will have the effect of no sound being played.
                 this.playingSoundPromise.then(soundPlayer => {
-                    soundPlayer.stopImmediately();
+                    if (soundPlayer) soundPlayer.stopImmediately();
                 });
             }
             // No further work should be performed on this promise and its
@@ -108,26 +137,28 @@ class SoundLibrary extends React.PureComponent {
         // instruction after the play instruction.
         this.playingSoundPromise = vm.runtime.storage.load(vm.runtime.storage.AssetType.Sound, md5)
             .then(soundAsset => {
-                const sound = {
-                    md5: md5ext,
-                    name: soundItem.name,
-                    format: soundItem.format,
-                    data: soundAsset.data
-                };
-                return this.audioEngine.decodeSoundPlayer(sound);
-            })
-            .then(soundPlayer => {
-                soundPlayer.connect(this.audioEngine);
-                // Play the sound. Playing the sound will always come before a
-                // paired stop if the sound must stop early.
-                soundPlayer.play();
-                soundPlayer.addListener('stop', this.onStop);
-                // Set that the sound is playing. This affects the type of stop
-                // instruction given if the sound must stop early.
-                if (this.playingSoundPromise !== null) {
-                    this.playingSoundPromise.isPlaying = true;
+                if (soundAsset) {
+                    const sound = {
+                        md5: md5ext,
+                        name: soundItem.name,
+                        format: soundItem.format,
+                        data: soundAsset.data
+                    };
+                    return this.audioEngine.decodeSoundPlayer(sound)
+                        .then(soundPlayer => {
+                            soundPlayer.connect(this.audioEngine);
+                            // Play the sound. Playing the sound will always come before a
+                            // paired stop if the sound must stop early.
+                            soundPlayer.play();
+                            soundPlayer.addListener('stop', this.onStop);
+                            // Set that the sound is playing. This affects the type of stop
+                            // instruction given if the sound must stop early.
+                            if (this.playingSoundPromise !== null) {
+                                this.playingSoundPromise.isPlaying = true;
+                            }
+                            return soundPlayer;
+                        });
                 }
-                return soundPlayer;
             });
     }
     handleItemMouseLeave () {
@@ -146,23 +177,10 @@ class SoundLibrary extends React.PureComponent {
         });
     }
     render () {
-        // @todo need to use this hack to avoid library using md5 for image
-        const soundLibraryThumbnailData = soundLibraryContent.map(sound => {
-            const {
-                md5ext,
-                ...otherData
-            } = sound;
-            return {
-                _md5: md5ext,
-                rawURL: this.props.isRtl ? soundIconRtl : soundIcon,
-                ...otherData
-            };
-        });
-
         return (
             <LibraryComponent
                 showPlayButton
-                data={soundLibraryThumbnailData}
+                data={this.state.data}
                 id="soundLibrary"
                 setStopHandler={this.setStopHandler}
                 tags={soundTags}

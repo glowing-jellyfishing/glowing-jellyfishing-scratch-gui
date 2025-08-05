@@ -1,4 +1,4 @@
-import ScratchBlocks from 'scratch-blocks';
+import LazyScratchBlocks from './tw-lazy-scratch-blocks';
 
 /**
  * Connect scratch blocks with the vm
@@ -6,6 +6,7 @@ import ScratchBlocks from 'scratch-blocks';
  * @return {ScratchBlocks} ScratchBlocks connected with the vm
  */
 export default function (vm) {
+    const ScratchBlocks = LazyScratchBlocks.get();
 
     const jsonForMenuBlock = function (name, menuOptionsFn, colors, start) {
         return {
@@ -176,9 +177,11 @@ export default function (vm) {
     };
 
     ScratchBlocks.Blocks.motion_pointtowards_menu.init = function () {
+        const random = ScratchBlocks.ScratchMsgs.translate('MOTION_POINTTOWARDS_RANDOM', 'random direction');
         const mouse = ScratchBlocks.ScratchMsgs.translate('MOTION_POINTTOWARDS_POINTER', 'mouse-pointer');
         const json = jsonForMenuBlock('TOWARDS', spriteMenu, motionColors, [
-            [mouse, '_mouse_']
+            [mouse, '_mouse_'],
+            [random, '_random_']
         ]);
         this.jsonInit(json);
     };

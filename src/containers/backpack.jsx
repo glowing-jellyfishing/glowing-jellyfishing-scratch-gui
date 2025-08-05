@@ -1,15 +1,18 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import bindAll from 'lodash.bindall';
+import {defineMessages, injectIntl, intlShape} from 'react-intl';
 import BackpackComponent from '../components/backpack/backpack.jsx';
 import {
     getBackpackContents,
     saveBackpackObject,
     deleteBackpackObject,
+    updateBackpackObject,
     soundPayload,
     costumePayload,
     spritePayload,
-    codePayload
+    codePayload,
+    LOCAL_API
 } from '../lib/backpack-api';
 import DragConstants from '../lib/drag-constants';
 import DropAreaHOC from '../lib/drop-area-hoc.jsx';
@@ -21,6 +24,14 @@ import VM from 'scratch-vm';
 const dragTypes = [DragConstants.COSTUME, DragConstants.SOUND, DragConstants.SPRITE];
 const DroppableBackpack = DropAreaHOC(dragTypes)(BackpackComponent);
 
+const messages = defineMessages({
+    rename: {
+        defaultMessage: 'New name:',
+        description: 'Renaming a backpack item',
+        id: 'tw.backpack.rename'
+    }
+});
+
 class Backpack extends React.Component {
     constructor (props) {
         super(props);
@@ -28,6 +39,7 @@ class Backpack extends React.Component {
             'handleDrop',
             'handleToggle',
             'handleDelete',
+            'handleRename',
             'getBackpackAssetURL',
             'getContents',
             'handleMouseEnter',
@@ -52,7 +64,7 @@ class Backpack extends React.Component {
 
         // If a host is given, add it as a web source to the storage module
         // TODO remove the hacky flag that prevents double adding
-        if (props.host && !storage._hasAddedBackpackSource) {
+        if (props.host && !storage._hasAddedBackpackSource && props.host !== LOCAL_API) {
             storage.addWebSource(
                 [storage.AssetType.ImageVector, storage.AssetType.ImageBitmap, storage.AssetType.Sound],
                 this.getBackpackAssetURL
@@ -81,6 +93,14 @@ class Backpack extends React.Component {
             this.getContents();
         }
     }
+    handleError (error) {
+        this.setState({
+            error: `${error}`,
+            loading: false
+        });
+        // Log error to console and make the Promise reject.
+        throw error;
+    }
     handleDrop (dragInfo) {
         let payloader = null;
         let presaveAsset = null;
@@ -108,7 +128,7 @@ class Backpack extends React.Component {
                 .then(payload => {
                     // Force the asset to save to the asset server before storing in backpack
                     // Ensures any asset present in the backpack is also on the asset server
-                    if (presaveAsset && !presaveAsset.clean) {
+                    if (presaveAsset && !presaveAsset.clean && !this.props.host === LOCAL_API) {
                         return storage.store(
                             presaveAsset.assetType,
                             presaveAsset.dataFormat,
@@ -131,8 +151,7 @@ class Backpack extends React.Component {
                     });
                 })
                 .catch(error => {
-                    this.setState({error: true, loading: false});
-                    throw error;
+                    this.handleError(error);
                 });
         });
     }
@@ -151,13 +170,39 @@ class Backpack extends React.Component {
                     });
                 })
                 .catch(error => {
-                    this.setState({error: true, loading: false});
-                    throw error;
+                    this.handleError(error);
+                });
+        });
+    }
+    findItemById (id) {
+        return this.state.contents.find(i => i.id === id);
+    }
+    async handleRename (id) {
+        const item = this.findItemById(id);
+        // eslint-disable-next-line no-alert
+        const newName = await prompt(this.props.intl.formatMessage(messages.rename), item.name);
+        if (!newName) {
+            return;
+        }
+        this.setState({loading: true}, () => {
+            updateBackpackObject({
+                host: this.props.host,
+                ...item,
+                name: newName
+            })
+                .then(newItem => {
+                    this.setState({
+                        loading: false,
+                        contents: this.state.contents.map(i => (i === item ? newItem : i))
+                    });
+                })
+                .catch(error => {
+                    this.handleError(error);
                 });
         });
     }
     getContents () {
-        if (this.props.token && this.props.username) {
+        if ((this.props.token && this.props.username) || this.props.host === LOCAL_API) {
             this.setState({loading: true, error: false}, () => {
                 getBackpackContents({
                     host: this.props.host,
@@ -174,8 +219,7 @@ class Backpack extends React.Component {
                         });
                     })
                     .catch(error => {
-                        this.setState({error: true, loading: false});
-                        throw error;
+                        this.handleError(error);
                     });
             });
         }
@@ -225,6 +269,7 @@ class Backpack extends React.Component {
                 loading={this.state.loading}
                 showMore={this.state.moreToLoad}
                 onDelete={this.handleDelete}
+                onRename={this.handleRename}
                 onDrop={this.handleDrop}
                 onMore={this.handleMore}
                 onMouseEnter={this.handleMouseEnter}
@@ -236,6 +281,7 @@ class Backpack extends React.Component {
 }
 
 Backpack.propTypes = {
+    intl: intlShape,
     host: PropTypes.string,
     token: PropTypes.string,
     username: PropTypes.string,
@@ -271,4 +317,4 @@ const mapStateToProps = state => Object.assign(
 
 const mapDispatchToProps = () => ({});
 
-export default connect(mapStateToProps, mapDispatchToProps)(Backpack);
+export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(Backpack));

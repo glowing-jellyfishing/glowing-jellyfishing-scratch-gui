@@ -4,21 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="google" value="notranslate">
-    <meta name="description" content="TurboWarp compiles Scratch projects to JavaScript to make them run faster." />
-    <!-- <link rel="shortcut icon" href="<%= htmlWebpackPlugin.options.root %>static/favicon.ico"> -->
-    <link rel="canonical" href="https://turbowarp.org/">
+    <meta name="description" content="TurboWarp is a Scratch mod with a compiler to run projects faster, dark mode for your eyes, a bunch of addons to improve the editor, and more." />
     <title><%= htmlWebpackPlugin.options.title %></title>
+    <link rel="apple-touch-icon" href="<%= htmlWebpackPlugin.options.root %>images/apple-touch-icon.png">
+    <% if (htmlWebpackPlugin.options.root === "/" || htmlWebpackPlugin.options.root === "") { %>
+      <link rel="manifest" href="<%= htmlWebpackPlugin.options.root %>manifest.webmanifest">
+    <% } %>
     <style>
       #splash {
-        user-select: none;
-        background-color: hsla(0, 100%, 65%, 1); color: white; font-family: sans-serif;
         position: absolute; width: 100%; height: 100%; top: 0; left: 0;
-        display: flex; align-items: center; justify-content: center; text-align: center;
+        display: flex; align-items: center; justify-content: center;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: #ff4c4c;
       }
-      #splash h1 { font-size: 2rem; font-weight: bold; } #splash a { color: inherit; }
       .tw-loaded #splash, #splash-content { display: none; }
-      @media (prefers-color-scheme: dark) { #splash { background-color: #333; color: #ddd; } }
+      #splash[splash-theme="dark"] { background-color: #333; color: #fff; }
+      #splash-spinner:after {
+        content: " "; display: block; width: 64px; height: 64px;
+        border-radius: 50%; border: 6px solid; border-color: currentColor transparent currentColor transparent;
+        animation: splash-spinner 1.2s linear infinite;
+      }
+      @keyframes splash-spinner {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
     </style>
+    <link rel="dns-prefetch" href="https://trampoline.turbowarp.org/">
+    <link rel="dns-prefetch" href="https://projects.scratch.mit.edu/">
+    <link rel="dns-prefetch" href="https://assets.scratch.mit.edu/">
   </head>
   <body>
     <div id="splash" aria-hidden="true">
@@ -26,21 +38,16 @@
         <h1>Enable JavaScript</h1>
       </noscript>
       <div id="splash-content">
-        <h1 id="splash-title">Loading scripts</h1>
-        <p id="splash-subtitle">This may take a while …</p>
-        <p><a id="splash-troubleshooting" href="https://github.com/TurboWarp/scratch-gui/wiki/Troubleshooting" target="_blank" rel="noopener">Troubleshooting</a></p>
-      </div>
+        <div id="splash-spinner"></div>
+     </div>
     </div>
     <script>
       (function() {
-        var languages = {};
-        var messages = languages[(window.navigator.userLanguage || window.navigator.language || '').split('-')[0].toLowerCase()];
-        if (messages) {
-          document.querySelector('#splash-title').textContent = messages[0];
-          document.querySelector('#splash-subtitle').textContent = messages[1];
-          document.querySelector('#splash-troubleshooting').textContent = messages[2];
-        }
         document.querySelector('#splash-content').style.display = 'block';
+        <% if (!htmlWebpackPlugin.options.noTheme) { %>
+        try {var localTheme = localStorage.getItem('tw:theme');} catch (e) {}
+        if (localTheme ? localTheme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches) document.querySelector('#splash').setAttribute('splash-theme', 'dark');
+        <% } %>
       })();
     </script>
     <div id="app"></div>

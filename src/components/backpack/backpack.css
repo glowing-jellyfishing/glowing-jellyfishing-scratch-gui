@@ -18,6 +18,9 @@
     cursor: pointer;
     user-select: none;
 }
+[theme="dark"] .backpack-header {
+    background: $ui-primary;
+}
 
 [dir="ltr"] .backpack-header {
     border-top-right-radius: $space;
@@ -68,6 +71,10 @@
     color: $text-primary;
 }
 
+.error-message {
+    font-family: monospace;
+}
+
 .backpack-item {
     width: 4rem;
     height: 4.5rem;
@@ -85,6 +92,9 @@
 
 .backpack-item img {
     mix-blend-mode: multiply; /* Make white transparent for thumnbnails */
+}
+[theme="dark"] .backpack-item img {
+    mix-blend-mode: normal;
 }
 
 .more {

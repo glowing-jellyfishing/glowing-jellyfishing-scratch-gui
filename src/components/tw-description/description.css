@@ -1,5 +1,5 @@
 .description {
-    max-height: 220px;
+    max-height: 250px;
     overflow: auto;
     white-space: pre-line;
     overflow-wrap: break-word;
@@ -8,6 +8,7 @@
     margin: 5px 0 8px 0;
     border: 1px solid #b9d6ff;
     background-color: #dbebff;
+    border-radius: 0.5rem;
 }
 
 .description a {
@@ -15,17 +16,22 @@
     text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-    .description {
-        border-color: #203652;
-        background-color: #16202c;
-    }
+[theme="dark"] .description {
+    border-color: #203652;
+    background-color: #16202c;
 }
 
 .header {
     font-weight: bold;
+    font-size: 1em;
+    margin: 0;
+    padding: 0;
 }
 
 .divider {
     margin-top: 8px;
+}
+
+.project-link {
+    margin-bottom: 2px;
 }

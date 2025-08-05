@@ -73,6 +73,15 @@ const SpriteSelectorItem = props => (
                         />
                     </MenuItem>
                 ) : null }
+                {props.onRenameButtonClick ? (
+                    <MenuItem onClick={props.onRenameButtonClick}>
+                        <FormattedMessage
+                            defaultMessage="rename"
+                            description="Menu item to rename an item"
+                            id="tw.spriteSelectorItem.rename"
+                        />
+                    </MenuItem>
+                ) : null}
                 {props.onDeleteButtonClick ? (
                     <DangerousMenuItem onClick={props.onDeleteButtonClick}>
                         <FormattedMessage
@@ -92,12 +101,14 @@ SpriteSelectorItem.propTypes = {
     componentRef: PropTypes.func,
     costumeURL: PropTypes.string,
     details: PropTypes.string,
-    name: PropTypes.string.isRequired,
+    // eslint-disable-next-line react/forbid-prop-types
+    name: PropTypes.any,
     number: PropTypes.number,
     onClick: PropTypes.func,
     onDeleteButtonClick: PropTypes.func,
     onDuplicateButtonClick: PropTypes.func,
     onExportButtonClick: PropTypes.func,
+    onRenameButtonClick: PropTypes.func,
     onMouseDown: PropTypes.func,
     onMouseEnter: PropTypes.func,
     onMouseLeave: PropTypes.func,

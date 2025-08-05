@@ -39,6 +39,7 @@ class Monitor extends React.Component {
         super(props);
         bindAll(this, [
             'handleDragEnd',
+            'handleHide',
             'handleNextMode',
             'handleSetModeToDefault',
             'handleSetModeToLarge',
@@ -119,6 +120,12 @@ class Monitor extends React.Component {
             y: newY
         }));
     }
+    handleHide () {
+        this.props.vm.runtime.requestUpdateMonitor(Map({
+            id: this.props.id,
+            visible: false
+        }));
+    }
     handleNextMode () {
         const modes = availableModes(this.props.opcode);
         const modeIndex = modes.indexOf(this.props.mode);
@@ -167,15 +174,20 @@ class Monitor extends React.Component {
         this.element = monitorElt;
     }
     handleImport () {
-        importCSV().then(rows => {
+        importCSV().then(async ({rows, text}) => {
             const numberOfColumns = rows[0].length;
             let columnNumber = 1;
             if (numberOfColumns > 1) {
                 const msg = this.props.intl.formatMessage(messages.columnPrompt, {numberOfColumns});
-                columnNumber = parseInt(prompt(msg), 10); // eslint-disable-line no-alert
+                columnNumber = parseInt(await prompt(msg), 10); // eslint-disable-line no-alert
             }
-            const newListValue = rows.map(row => row[columnNumber - 1])
-                .filter(item => typeof item === 'string'); // CSV importer can leave undefineds
+            let newListValue;
+            if (isNaN(columnNumber) || numberOfColumns === 1) {
+                newListValue = text.replace(/\r/g, '').split('\n');
+            } else {
+                newListValue = rows.map(row => row[columnNumber - 1])
+                    .filter(item => typeof item === 'string'); // CSV importer can leave undefineds
+            }
             const {vm, targetId, id: variableId} = this.props;
             setVariableValue(vm, targetId, variableId, newListValue);
         });
@@ -203,6 +215,7 @@ class Monitor extends React.Component {
                 <MonitorComponent
                     componentRef={this.setElement}
                     {...monitorProps}
+                    opcode={this.props.opcode}
                     draggable={this.props.draggable}
                     height={this.props.height}
                     isDiscrete={this.props.isDiscrete}
@@ -214,6 +227,7 @@ class Monitor extends React.Component {
                     onDragEnd={this.handleDragEnd}
                     onExport={isList ? this.handleExport : null}
                     onImport={isList ? this.handleImport : null}
+                    onHide={this.handleHide}
                     onNextMode={this.handleNextMode}
                     onSetModeToDefault={isList ? null : this.handleSetModeToDefault}
                     onSetModeToLarge={isList ? null : this.handleSetModeToLarge}
@@ -236,8 +250,8 @@ Monitor.propTypes = {
     min: PropTypes.number,
     mode: PropTypes.oneOf(['default', 'slider', 'large', 'list']),
     monitorLayout: PropTypes.shape({
-        monitors: PropTypes.object,
-        savedMonitorPositions: PropTypes.object
+        monitors: PropTypes.object, // eslint-disable-line react/forbid-prop-types
+        savedMonitorPositions: PropTypes.object // eslint-disable-line react/forbid-prop-types
     }).isRequired,
     onDragEnd: PropTypes.func.isRequired,
     opcode: PropTypes.string.isRequired, // eslint-disable-line react/no-unused-prop-types

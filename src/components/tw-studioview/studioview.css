@@ -8,11 +8,6 @@ With changes to make it work properly in the scratch-gui environment.
 .wrapper {
   height: 100%;
 }
-/* we let you disable the view */
-.disabled {
-  pointer-events: none;
-  opacity: 0.8;
-}
 /* fix some styles that can be messed up by scratch-gui */
 .studioview-root * {
   box-sizing: content-box !important;
@@ -74,8 +69,19 @@ With changes to make it work properly in the scratch-gui environment.
 }
 
 .studioview-thumbnail, .studioview-placeholder-thumbnail {
+  position: relative;
   width: 144px;
   height: 108px;
+}
+.studioview-thumbnail::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: currentColor;
+  opacity: 0.1;
 }
 .studioview-thumbnail img {
   width: 100%;

@@ -1,4 +1,5 @@
 @import "../../css/colors.css";
+@import "../../css/z-index.css";
 
 .input {
     border: none;
@@ -14,4 +15,18 @@
 }
 .input:disabled {
     opacity: 0.8;
+}
+
+.tooltip {
+    opacity: 1 !important;
+    background-color: $extensions-primary !important;
+    border: 1px solid hsla(0, 0%, 0%, .1) !important;
+    box-shadow: 0 0 .5rem hsla(0, 0%, 0%, .25) !important;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+    border: 1px solid hsla(0, 0%, 0%, .1) !important;
+    z-index: $z-index-menu-bar !important;
+}
+
+.tooltip:after {
+    border-top-color: $extensions-primary !important;
 }

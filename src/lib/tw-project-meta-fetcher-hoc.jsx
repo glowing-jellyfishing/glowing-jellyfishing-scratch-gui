@@ -5,23 +5,50 @@ import log from './log';
 
 import {setProjectTitle} from '../reducers/project-title';
 import {setAuthor, setDescription} from '../reducers/tw';
-import analytics from './analytics';
 
-const API_URL = 'https://trampoline.turbowarp.org/proxy/projects/$id';
-
-const fetchProjectMeta = projectId => fetch(API_URL.replace('$id', projectId))
-    .then(r => {
-        if (r.status !== 200) {
-            throw new Error(`Unexpected status code: ${r.status}`);
+export const fetchProjectMeta = async projectId => {
+    const urls = [
+        `https://trampoline.turbowarp.org/api/projects/${projectId}`,
+        `https://trampoline.turbowarp.xyz/api/projects/${projectId}`
+    ];
+    let firstError;
+    for (const url of urls) {
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            if (res.ok) {
+                return data;
+            }
+            if (res.status === 404) {
+                throw new Error('Project is probably unshared');
+            }
+            throw new Error(`Unexpected status code: ${res.status}`);
+        } catch (err) {
+            if (!firstError) {
+                firstError = err;
+            }
         }
-        return r.json();
-    });
+    }
+    throw firstError;
+};
+
+const getNoIndexTag = () => document.querySelector('meta[name="robots"][content="noindex"]');
+const setIndexable = indexable => {
+    if (indexable) {
+        const tag = getNoIndexTag();
+        if (tag) {
+            tag.remove();
+        }
+    } else if (!getNoIndexTag()) {
+        const tag = document.createElement('meta');
+        tag.name = 'robots';
+        tag.content = 'noindex';
+        document.head.appendChild(tag);
+    }
+};
 
 const TWProjectMetaFetcherHOC = function (WrappedComponent) {
     class ProjectMetaFetcherComponent extends React.Component {
-        componentDidMount () {
-            this.initialTitle = document.title;
-        }
         shouldComponentUpdate (nextProps) {
             return this.props.projectId !== nextProps.projectId;
         }
@@ -30,7 +57,6 @@ const TWProjectMetaFetcherHOC = function (WrappedComponent) {
             this.props.onSetAuthor('', '');
             this.props.onSetDescription('', '');
             const projectId = this.props.projectId;
-            document.title = this.initialTitle;
             // Don't try to load metadata for empty projects.
             if (projectId === '0') {
                 return;
@@ -43,33 +69,33 @@ const TWProjectMetaFetcherHOC = function (WrappedComponent) {
                     }
                     const title = data.title;
                     if (title) {
-                        document.title = `${title} - TurboWarp`;
                         this.props.onSetProjectTitle(title);
                     }
                     const authorName = data.author.username;
-                    const authorThumbnail = data.author.profile.images['32x32'];
-                    if (authorName && authorThumbnail) {
-                        this.props.onSetAuthor(authorName, authorThumbnail);
-                    }
+                    const authorThumbnail = `https://trampoline.turbowarp.org/avatars/${data.author.id}`;
+                    this.props.onSetAuthor(authorName, authorThumbnail);
                     const instructions = data.instructions || '';
                     const credits = data.description || '';
                     if (instructions || credits) {
                         this.props.onSetDescription(instructions, credits);
                     }
-                    analytics.twEvent('Load Shared');
+                    setIndexable(true);
                 })
                 .catch(err => {
-                    analytics.twEvent('Load Unshared');
+                    setIndexable(false);
+                    if (`${err}`.includes('unshared')) {
+                        this.props.onSetDescription('unshared', 'unshared');
+                    }
                     log.warn('cannot fetch project meta', err);
                 });
-        }
-        componentWillUnmount () {
-            document.title = this.initialTitle;
         }
         render () {
             const {
                 /* eslint-disable no-unused-vars */
                 projectId,
+                onSetAuthor,
+                onSetDescription,
+                onSetProjectTitle,
                 /* eslint-enable no-unused-vars */
                 ...props
             } = this.props;

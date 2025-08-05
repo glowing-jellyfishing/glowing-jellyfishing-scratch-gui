@@ -7,6 +7,7 @@ import Box from '../box/box.jsx';
 import Modal from '../../containers/modal.jsx';
 
 import styles from './prompt.css';
+import {SCRATCH_MAX_CLOUD_VARIABLES} from '../../lib/tw-cloud-limits.js';
 
 
 const messages = defineMessages({
@@ -30,6 +31,12 @@ const messages = defineMessages({
         description: 'A message that displays in a variable modal when the stage is selected indicating ' +
             'that the variable being created will available to all sprites.',
         id: 'gui.gui.variablePromptAllSpritesMessage'
+    },
+    listAvailableToAllSpritesMessage: {
+        defaultMessage: 'This list will be available to all sprites.',
+        description: 'A message that displays in a list modal when the stage is selected indicating ' +
+            'that the list being created will available to all sprites.',
+        id: 'gui.gui.listPromptAllSpritesMessage'
     }
 });
 
@@ -58,9 +65,15 @@ const PromptComponent = props => (
                 <div>
                     {props.isStage ?
                         <div className={styles.infoMessage}>
-                            <FormattedMessage
-                                {...messages.availableToAllSpritesMessage}
-                            />
+                            {props.showListMessage ? (
+                                <FormattedMessage
+                                    {...messages.listAvailableToAllSpritesMessage}
+                                />
+                            ) : (
+                                <FormattedMessage
+                                    {...messages.availableToAllSpritesMessage}
+                                />
+                            )}
                         </div> :
                         <Box className={styles.optionsRow}>
                             <label>
@@ -109,6 +122,44 @@ const PromptComponent = props => (
                         </Box> : null}
                 </div> : null}
 
+            {props.cloudSelected && !props.isAddingCloudVariableScratchSafe && (
+                <Box className={styles.infoMessage}>
+                    <FormattedMessage
+                        // eslint-disable-next-line max-len
+                        defaultMessage="If you make this cloud variable, the project will exceed Scratch's limit of {number} variables, and some variables will not function if you upload the project to Scratch."
+                        // eslint-disable-next-line max-len
+                        description="Warning that appears when adding a new cloud variable will make it exceeded Scratch's cloud variable limit. number will be 10."
+                        id="tw.scratchUnsafeCloud"
+                        values={{
+                            number: SCRATCH_MAX_CLOUD_VARIABLES
+                        }}
+                    />
+                </Box>
+            )}
+
+            {props.cloudSelected && props.canAddCloudVariable && (
+                <Box className={styles.infoMessage}>
+                    <FormattedMessage
+                        /* eslint-disable-next-line max-len */
+                        defaultMessage="Although you can create cloud variables, they won't work unless this project is uploaded to Scratch or converted using a tool like the {packager}."
+                        description="Reminder that cloud variables may not work when the editor is open"
+                        values={{
+                            packager: (
+                                <a
+                                    href="https://packager.turbowarp.org"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    {/* Should not be translated */}
+                                    {'TurboWarp Packager'}
+                                </a>
+                            )
+                        }}
+                        id="tw.cantUseCloud"
+                    />
+                </Box>
+            )}
+
             <Box className={styles.buttonRow}>
                 <button
                     className={styles.cancelButton}
@@ -136,11 +187,13 @@ const PromptComponent = props => (
 );
 
 PromptComponent.propTypes = {
+    isAddingCloudVariableScratchSafe: PropTypes.bool.isRequired,
     canAddCloudVariable: PropTypes.bool.isRequired,
     cloudSelected: PropTypes.bool.isRequired,
     defaultValue: PropTypes.string,
     globalSelected: PropTypes.bool.isRequired,
     isStage: PropTypes.bool.isRequired,
+    showListMessage: PropTypes.bool.isRequired,
     label: PropTypes.string.isRequired,
     onCancel: PropTypes.func.isRequired,
     onChange: PropTypes.func.isRequired,

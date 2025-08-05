@@ -16,7 +16,8 @@ describe('VMListenerHOC', () => {
             scratchGui: {
                 mode: {},
                 modals: {},
-                vm: vm
+                vm: vm,
+                tw: {hasCloudVariables: false}
             }
         });
     });
@@ -76,7 +77,8 @@ describe('VMListenerHOC', () => {
             scratchGui: {
                 mode: {},
                 modals: {soundRecorder: true},
-                vm: vm
+                vm: vm,
+                tw: {hasCloudVariables: false}
             }
         });
         mount(
@@ -99,7 +101,8 @@ describe('VMListenerHOC', () => {
             scratchGui: {
                 mode: {},
                 modals: {soundRecorder: true},
-                vm: vm
+                vm: vm,
+                tw: {hasCloudVariables: false}
             }
         });
         mount(
@@ -120,7 +123,8 @@ describe('VMListenerHOC', () => {
             scratchGui: {
                 mode: {isFullScreen: true},
                 modals: {soundRecorder: true},
-                vm: vm
+                vm: vm,
+                tw: {hasCloudVariables: false}
             }
         });
         mount(
@@ -151,7 +155,8 @@ describe('VMListenerHOC', () => {
             scratchGui: {
                 mode: {isFullScreen: true},
                 modals: {soundRecorder: true},
-                vm: vm
+                vm: vm,
+                tw: {hasCloudVariables: false}
             }
         });
         mount(
@@ -176,6 +181,6 @@ describe('VMListenerHOC', () => {
         // When key is 'Dead' e.g. bluetooth keyboards on iOS, it sends keyCode instead
         // because the VM can process both named keys or keyCodes as the `key` property
         eventTriggers.keyup({key: 'Dead', keyCode: 10, target: document});
-        expect(vm.postIOData).toHaveBeenLastCalledWith('keyboard', {key: 10, isDown: false});
+        expect(vm.postIOData).toHaveBeenLastCalledWith('keyboard', {key: 10, isDown: false, keyCode: 10});
     });
 });

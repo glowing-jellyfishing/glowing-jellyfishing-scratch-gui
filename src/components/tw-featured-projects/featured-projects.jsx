@@ -1,13 +1,12 @@
 import bindAll from 'lodash.bindall';
 import PropTypes from 'prop-types';
-import classNames from 'classnames';
 import React from 'react';
 import {FormattedMessage} from 'react-intl';
 import {connect} from 'react-redux';
 import StudioView from '../tw-studioview/studioview.jsx';
 import styles from './featured-projects.css';
-import {getIsLoading, getIsFetchingWithId, setProjectId} from '../../reducers/project-state';
-import analytics from '../../lib/analytics';
+import {setProjectId} from '../../lib/tw-navigation-utils.js';
+import classNames from 'classnames';
 
 class FeaturedProjects extends React.Component {
     constructor (props) {
@@ -17,12 +16,21 @@ class FeaturedProjects extends React.Component {
             'handleOpenProjects'
         ]);
         this.state = {
-            opened: false
+            opened: false,
+            transition: true
         };
+    }
+    componentDidUpdate (prevProps) {
+        if (this.props.projectId === '0' && prevProps.projectId === null) {
+            // eslint-disable-next-line react/no-did-update-set-state
+            this.setState({
+                opened: true,
+                transition: false
+            });
+        }
     }
     handleSelect (id) {
         this.props.setProjectId(id);
-        analytics.twEvent('Load Featured');
     }
     handleOpenProjects () {
         this.setState({
@@ -32,19 +40,19 @@ class FeaturedProjects extends React.Component {
     render () {
         const opened = this.state.opened;
         return (
-            <div
-                className={classNames(
-                    styles.container,
-                    {
-                        [styles.opened]: opened
-                    }
-                )}
-            >
-                <div className={styles.projects}>
+            <div className={styles.container}>
+                <div
+                    className={classNames(
+                        styles.projects,
+                        {
+                            [styles.opened]: opened,
+                            [styles.transition]: this.state.transition
+                        }
+                    )}
+                >
                     <StudioView
                         id={this.props.studio}
                         onSelect={this.handleSelect}
-                        disabled={this.props.loading}
                         placeholder={!opened}
                     />
                     {opened ? null : (
@@ -81,18 +89,17 @@ class FeaturedProjects extends React.Component {
 }
 
 FeaturedProjects.propTypes = {
-    loading: PropTypes.bool,
     setProjectId: PropTypes.func,
+    projectId: PropTypes.string,
     studio: PropTypes.string
 };
 
 const mapStateToProps = state => ({
-    loading: getIsLoading(state.scratchGui.projectState.loadingState) ||
-        getIsFetchingWithId(state.scratchGui.projectState.loadingState)
+    projectId: state.scratchGui.projectState.projectId
 });
 
 const mapDispatchToProps = dispatch => ({
-    setProjectId: projectId => dispatch(setProjectId(projectId))
+    setProjectId: projectId => setProjectId(dispatch, projectId)
 });
 
 export default connect(

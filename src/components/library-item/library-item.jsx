@@ -21,7 +21,7 @@ class LibraryItemComponent extends React.PureComponent {
                     {
                         [styles.disabled]: this.props.disabled
                     },
-                    this.props.extensionId ? styles.libraryItemExtension : null,
+                    typeof this.props.extensionId === 'string' ? styles.libraryItemExtension : null,
                     this.props.hidden ? styles.hidden : null
                 )}
                 onClick={this.props.onClick}
@@ -50,7 +50,7 @@ class LibraryItemComponent extends React.PureComponent {
                     </div>
                 ) : null}
                 <div
-                    className={this.props.extensionId ?
+                    className={typeof this.props.extensionId === 'string' ?
                         classNames(styles.featuredExtensionText, styles.featuredText) : styles.featuredText
                     }
                 >
@@ -103,6 +103,16 @@ class LibraryItemComponent extends React.PureComponent {
                         </div>
                     </div>
                 ) : null}
+                {this.props.incompatibleWithScratch && (
+                    <div className={styles.incompatibleWithScratch}>
+                        <FormattedMessage
+                            // eslint-disable-next-line max-len
+                            defaultMessage="Not compatible with Scratch."
+                            description="Warning that appears on extensions that won't work in Scratch."
+                            id="tw.extensions.incompatible"
+                        />
+                    </div>
+                )}
             </div>
         ) : (
             <Box
@@ -129,6 +139,7 @@ class LibraryItemComponent extends React.PureComponent {
                     >
                         <img
                             className={styles.libraryItemImage}
+                            loading="lazy"
                             src={this.props.iconURL}
                         />
                     </Box>
@@ -160,6 +171,7 @@ LibraryItemComponent.propTypes = {
     featured: PropTypes.bool,
     hidden: PropTypes.bool,
     iconURL: PropTypes.string,
+    incompatibleWithScratch: PropTypes.bool,
     insetIconURL: PropTypes.string,
     internetConnectionRequired: PropTypes.bool,
     isPlaying: PropTypes.bool,

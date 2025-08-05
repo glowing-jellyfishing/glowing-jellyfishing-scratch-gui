@@ -15,7 +15,7 @@ import {setRestore} from '../reducers/restore-deletion';
 import DragConstants from '../lib/drag-constants';
 import TargetPaneComponent from '../components/target-pane/target-pane.jsx';
 import {BLOCKS_DEFAULT_SCALE} from '../lib/layout-constants';
-import spriteLibraryContent from '../lib/libraries/sprites.json';
+import {getSpriteLibrary} from '../lib/libraries/tw-async-libraries';
 import {handleFileUpload, spriteUpload} from '../lib/file-uploader.js';
 import sharedMessages from '../lib/shared-messages';
 import {emptySprite} from '../lib/empty-assets';
@@ -23,6 +23,7 @@ import {highlightTarget} from '../reducers/targets';
 import {fetchSprite, fetchCode} from '../lib/backpack-api';
 import randomizeSpritePosition from '../lib/randomize-sprite-position';
 import downloadBlob from '../lib/download-blob';
+import log from '../lib/log';
 
 class TargetPane extends React.Component {
     constructor (props) {
@@ -105,7 +106,8 @@ class TargetPane extends React.Component {
             this.props.onHighlightTarget(id);
         }
     }
-    handleSurpriseSpriteClick () {
+    async handleSurpriseSpriteClick () {
+        const spriteLibraryContent = await getSpriteLibrary();
         const surpriseSprites = spriteLibraryContent.filter(sprite =>
             (sprite.tags.indexOf('letters') === -1) && (sprite.tags.indexOf('numbers') === -1)
         );
@@ -132,16 +134,19 @@ class TargetPane extends React.Component {
     }
     handleNewSprite (spriteJSONString) {
         return this.props.vm.addSprite(spriteJSONString)
-            .then(this.handleActivateBlocksTab);
+            .then(this.handleActivateBlocksTab)
+            .catch(err => {
+                log.error(err);
+            });
     }
     handleFileUploadClick () {
         this.fileInput.click();
     }
     handleSpriteUpload (e) {
-        const storage = this.props.vm.runtime.storage;
+        const vm = this.props.vm;
         this.props.onShowImporting();
         handleFileUpload(e.target, (buffer, fileType, fileName, fileIndex, fileCount) => {
-            spriteUpload(buffer, fileType, fileName, storage, newSprite => {
+            spriteUpload(buffer, fileType, fileName, vm, newSprite => {
                 this.handleNewSprite(newSprite)
                     .then(() => {
                         if (fileIndex === fileCount - 1) {
@@ -237,6 +242,7 @@ class TargetPane extends React.Component {
         /* eslint-disable no-unused-vars */
         const {
             dispatchUpdateRestore,
+            isRtl,
             onActivateTab,
             onCloseImporting,
             onHighlightTarget,

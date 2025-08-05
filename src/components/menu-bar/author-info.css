@@ -22,6 +22,8 @@
     font-weight: bold;
     text-overflow: ellipsis;
     white-space: nowrap;
+    margin: 0;
+    padding: 0;
 }
 
 .username-line {
@@ -38,10 +40,13 @@
     font-weight: bold;
 }
 
-.username-link, .project-link {
-    color: $ui-white !important;
+.link {
     text-decoration: none;
+    color: $ui-white !important;
 }
-.username-link:hover, .project-link:hover {
+.link:hover {
     text-decoration: underline;
+}
+.link .author-info {
+    cursor: pointer;
 }

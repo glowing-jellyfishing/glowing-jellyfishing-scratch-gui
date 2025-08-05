@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-unresolved
-import soundThumbnail from '!base64-loader!./sound-thumbnail.jpg';
+import soundThumbnail from '!base64-loader!./sound-thumbnail.png';
 
 const soundPayload = sound => {
     const assetDataUrl = sound.asset.encodeDataURI();
@@ -33,4 +33,7 @@ const soundPayload = sound => {
     return new Promise(resolve => resolve(payload));
 };
 
-export default soundPayload;
+export {
+    soundPayload as default,
+    soundThumbnail
+};

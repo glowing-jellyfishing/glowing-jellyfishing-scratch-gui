@@ -5,6 +5,7 @@ import VM from 'scratch-vm';
 import {connect} from 'react-redux';
 
 import ControlsComponent from '../components/controls/controls.jsx';
+import {STAGE_SIZE_MODES} from '../lib/layout-constants.js';
 
 class Controls extends React.Component {
     constructor (props) {
@@ -64,6 +65,8 @@ Controls.propTypes = {
     projectRunning: PropTypes.bool.isRequired,
     turbo: PropTypes.bool.isRequired,
     framerate: PropTypes.number.isRequired,
+    interpolation: PropTypes.bool.isRequired,
+    isSmall: PropTypes.bool,
     vm: PropTypes.instanceOf(VM)
 };
 
@@ -71,6 +74,7 @@ const mapStateToProps = state => ({
     isStarted: state.scratchGui.vmStatus.started,
     projectRunning: state.scratchGui.vmStatus.running,
     framerate: state.scratchGui.tw.framerate,
+    interpolation: state.scratchGui.tw.interpolation,
     turbo: state.scratchGui.vmStatus.turbo
 });
 // no-op function to prevent dispatch prop being passed to component

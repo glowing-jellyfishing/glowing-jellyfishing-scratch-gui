@@ -10,6 +10,7 @@ import Input from '../forms/input.jsx';
 import BufferedInputHOC from '../forms/buffered-input-hoc.jsx';
 import AudioSelector from '../../containers/audio-selector.jsx';
 import IconButton from '../icon-button/icon-button.jsx';
+import {SOUND_BYTE_LIMIT} from '../../lib/audio/audio-util.js';
 
 import styles from './sound-editor.css';
 
@@ -22,6 +23,7 @@ import slowerIcon from './icon--slower.svg';
 import louderIcon from './icon--louder.svg';
 import softerIcon from './icon--softer.svg';
 import robotIcon from './icon--robot.svg';
+import echoIcon from './icon--echo.svg';
 import reverseIcon from './icon--reverse.svg';
 import fadeOutIcon from './icon--fade-out.svg';
 import fadeInIcon from './icon--fade-in.svg';
@@ -137,6 +139,42 @@ const messages = defineMessages({
     }
 });
 
+const formatTime = timeSeconds => {
+    const minutes = (Math.floor(timeSeconds / 60))
+        .toString()
+        .padStart(2, '0');
+    const seconds = (timeSeconds % 60)
+        .toFixed(2)
+        .padStart(5, '0');
+    return `${minutes}:${seconds}`;
+};
+
+const formatDuration = (playheadPercent, trimStartPercent, trimEndPercent, durationSeconds) => {
+    // If no selection, the trim is the entire sound.
+    trimStartPercent = trimStartPercent === null ? 0 : trimStartPercent;
+    trimEndPercent = trimEndPercent === null ? 1 : trimEndPercent;
+
+    // If the playhead doesn't exist, assume it's at the start of the selection.
+    playheadPercent = playheadPercent === null ? trimStartPercent : playheadPercent;
+
+    // If selection has zero length, treat it as the entire sound being selected.
+    // This happens when the user first clicks to start making a selection.
+    const trimSize = (trimEndPercent - trimStartPercent) || 1;
+    const trimDuration = trimSize * durationSeconds;
+
+    const progressInTrim = (playheadPercent - trimStartPercent) / trimSize;
+    const currentTime = progressInTrim * trimDuration;
+
+    return `${formatTime(currentTime)} / ${formatTime(trimDuration)}`;
+};
+
+const formatSoundSize = bytes => {
+    if (bytes > 1000 * 1000) {
+        return `${(bytes / 1000 / 1000).toFixed(2)}MB`;
+    }
+    return `${(bytes / 1000).toFixed(2)}KB`;
+};
+
 const SoundEditor = props => (
     <div
         className={styles.editorContainer}
@@ -151,6 +189,7 @@ const SoundEditor = props => (
                         type="text"
                         value={props.name}
                         onSubmit={props.onChangeName}
+                        className={styles.nameInput}
                     />
                 </Label>
                 <div className={styles.buttonGroup}>
@@ -227,7 +266,7 @@ const SoundEditor = props => (
             </div>
         </div>
         <div className={classNames(styles.row, styles.rowReverse)}>
-            <div className={styles.inputGroup}>
+            <div className={classNames(styles.roundButtonOuter, styles.inputGroup)}>
                 {props.playhead ? (
                     <button
                         className={classNames(styles.roundButton, styles.stopButtonn)}
@@ -252,66 +291,120 @@ const SoundEditor = props => (
                     </button>
                 )}
             </div>
-            <IconButton
-                className={styles.effectButton}
-                img={fasterIcon}
-                title={<FormattedMessage {...messages.faster} />}
-                onClick={props.onFaster}
-            />
-            <IconButton
-                className={styles.effectButton}
-                img={slowerIcon}
-                title={<FormattedMessage {...messages.slower} />}
-                onClick={props.onSlower}
-            />
-            <IconButton
-                disabled={props.tooLoud}
-                className={classNames(styles.effectButton, styles.flipInRtl)}
-                img={louderIcon}
-                title={<FormattedMessage {...messages.louder} />}
-                onClick={props.onLouder}
-            />
-            <IconButton
-                className={classNames(styles.effectButton, styles.flipInRtl)}
-                img={softerIcon}
-                title={<FormattedMessage {...messages.softer} />}
-                onClick={props.onSofter}
-            />
-            <IconButton
-                className={classNames(styles.effectButton, styles.flipInRtl)}
-                img={muteIcon}
-                title={<FormattedMessage {...messages.mute} />}
-                onClick={props.onMute}
-            />
-            <IconButton
-                className={styles.effectButton}
-                img={fadeInIcon}
-                title={<FormattedMessage {...messages.fadeIn} />}
-                onClick={props.onFadeIn}
-            />
-            <IconButton
-                className={styles.effectButton}
-                img={fadeOutIcon}
-                title={<FormattedMessage {...messages.fadeOut} />}
-                onClick={props.onFadeOut}
-            />
-            <IconButton
-                className={styles.effectButton}
-                img={reverseIcon}
-                title={<FormattedMessage {...messages.reverse} />}
-                onClick={props.onReverse}
-            />
-            <IconButton
-                className={styles.effectButton}
-                img={robotIcon}
-                title={<FormattedMessage {...messages.robot} />}
-                onClick={props.onRobot}
-            />
+            <div className={styles.effects}>
+                <IconButton
+                    className={styles.effectButton}
+                    img={fasterIcon}
+                    title={<FormattedMessage {...messages.faster} />}
+                    onClick={props.onFaster}
+                />
+                <IconButton
+                    className={styles.effectButton}
+                    img={slowerIcon}
+                    title={<FormattedMessage {...messages.slower} />}
+                    onClick={props.onSlower}
+                />
+                <IconButton
+                    disabled={props.tooLoud}
+                    className={classNames(styles.effectButton, styles.flipInRtl)}
+                    img={louderIcon}
+                    title={<FormattedMessage {...messages.louder} />}
+                    onClick={props.onLouder}
+                />
+                <IconButton
+                    className={classNames(styles.effectButton, styles.flipInRtl)}
+                    img={softerIcon}
+                    title={<FormattedMessage {...messages.softer} />}
+                    onClick={props.onSofter}
+                />
+                <IconButton
+                    className={classNames(styles.effectButton, styles.flipInRtl)}
+                    img={muteIcon}
+                    title={<FormattedMessage {...messages.mute} />}
+                    onClick={props.onMute}
+                />
+                <IconButton
+                    className={styles.effectButton}
+                    img={fadeInIcon}
+                    title={<FormattedMessage {...messages.fadeIn} />}
+                    onClick={props.onFadeIn}
+                />
+                <IconButton
+                    className={styles.effectButton}
+                    img={fadeOutIcon}
+                    title={<FormattedMessage {...messages.fadeOut} />}
+                    onClick={props.onFadeOut}
+                />
+                <IconButton
+                    className={styles.effectButton}
+                    img={reverseIcon}
+                    title={<FormattedMessage {...messages.reverse} />}
+                    onClick={props.onReverse}
+                />
+                <IconButton
+                    className={styles.effectButton}
+                    img={robotIcon}
+                    title={<FormattedMessage {...messages.robot} />}
+                    onClick={props.onRobot}
+                />
+                <IconButton
+                    className={styles.effectButton}
+                    img={echoIcon}
+                    title={<FormattedMessage {...messages.echo} />}
+                    onClick={props.onEcho}
+                />
+            </div>
         </div>
+        <div className={styles.infoRow}>
+            <div className={styles.duration}>
+                {formatDuration(props.playhead, props.trimStart, props.trimEnd, props.duration)}
+            </div>
+            <div className={styles.advancedInfo}>
+                {props.sampleRate}
+                {'Hz '}
+                {props.isStereo ? (
+                    <FormattedMessage
+                        defaultMessage="Stereo"
+                        description="Refers to a 'Stereo Sound' (2 channels)"
+                        id="tw.stereo"
+                    />
+                ) : (
+                    <FormattedMessage
+                        defaultMessage="Mono"
+                        description="Refers to a 'Mono Sound' (1 channel)"
+                        id="tw.mono"
+                    />
+                )}
+                {` (${formatSoundSize(props.size)})`}
+            </div>
+        </div>
+        {/* TODO: don't know whether this should be > or >=. Using >= for now to be safe */}
+        {props.size >= SOUND_BYTE_LIMIT && (
+            <div className={classNames(styles.alert, styles.tooLarge)}>
+                <FormattedMessage
+                    defaultMessage="This sound may be too large to upload to Scratch."
+                    description="Message that appears when a sound exceeds the Scratch sound size limit."
+                    id="tw.tooLarge"
+                />
+            </div>
+        )}
+        {props.isStereo && (
+            <div className={classNames(styles.alert, styles.stereo)}>
+                <FormattedMessage
+                    defaultMessage="Editing this stereo sound will irreversibly convert it to mono."
+                    description="Message that appears when editing a stereo sound."
+                    id="tw.stereoAlert"
+                />
+            </div>
+        )}
     </div>
 );
 
 SoundEditor.propTypes = {
+    isStereo: PropTypes.bool.isRequired,
+    duration: PropTypes.number.isRequired,
+    size: PropTypes.bool.isRequired,
+    sampleRate: PropTypes.number.isRequired,
     canPaste: PropTypes.bool.isRequired,
     canRedo: PropTypes.bool.isRequired,
     canUndo: PropTypes.bool.isRequired,

@@ -28,16 +28,17 @@ class Storage extends ScratchStorage {
             this.getAssetCreateConfig.bind(this),
             this.getAssetCreateConfig.bind(this)
         );
-        this.addWebStore(
-            [this.AssetType.Sound],
-            asset => `static/extension-assets/scratch3_music/${asset.assetId}.${asset.dataFormat}`
-        );
     }
     setProjectHost (projectHost) {
         this.projectHost = projectHost;
     }
+    setProjectToken (projectToken) {
+        this.projectToken = projectToken;
+    }
     getProjectGetConfig (projectAsset) {
-        return `${this.projectHost}/${projectAsset.assetId}`;
+        const path = `${this.projectHost}/${projectAsset.assetId}`;
+        const qs = this.projectToken ? `?token=${this.projectToken}` : '';
+        return path + qs;
     }
     getProjectCreateConfig () {
         return {
