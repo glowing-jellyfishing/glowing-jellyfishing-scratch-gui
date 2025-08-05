@@ -2,7 +2,6 @@
 @import "../../css/colors.css";
 @import "../../css/z-index.css";
 
-/* tw: this changes the loading screen to be contained to the stage */
 .stage-wrapper {
     position: relative;
 }
@@ -16,6 +15,10 @@
     user-select: none;
 }
 
+.offset-controls .stage-canvas-wrapper {
+    padding-top: 44px;
+}
+
 .stage-wrapper.full-screen {
     position: fixed;
     top: $stage-menu-height;
@@ -23,7 +26,7 @@
     right: 0;
     bottom: 0;
     z-index: $z-index-stage-wrapper-overlay;
-    background-color: $ui-white;
+    background-color: $fullscreen-background;
     /* spacing between stage and control bar (on the top), or between
     stage and window edges (on left/right/bottom) */
     padding: $stage-full-screen-stage-padding;
@@ -34,12 +37,6 @@
     align-items: center;
 }
 
-/* tw: support dark mode */
-[theme="dark"] .stage-wrapper.full-screen {
-    background-color: #111;
-}
-
-/* tw: do not show color in embeds */
 .stage-wrapper.embedded {
     background-color: transparent;
 }

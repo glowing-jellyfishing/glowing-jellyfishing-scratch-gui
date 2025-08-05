@@ -2,12 +2,14 @@
 @import "../../css/units.css";
 
 .inline-message {
-    color: $ui-white;
+    color: $menu-bar-foreground;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     display: flex;
     justify-content: flex-end;
     align-items: center;
     font-size: .8125rem;
+    padding: 0 0.5rem;
+    user-select: none;
 }
 
 .success {
@@ -15,7 +17,7 @@
 }
 
 .info {
-    color: $ui-white;
+    color: $menu-bar-foreground;
 }
 
 .warn {

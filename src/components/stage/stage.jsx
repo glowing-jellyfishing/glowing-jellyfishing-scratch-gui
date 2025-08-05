@@ -23,6 +23,7 @@ const StageComponent = props => {
         isFullScreen,
         isPlayerOnly,
         isStarted,
+        isRtl,
         colorInfo,
         micIndicator,
         question,
@@ -37,7 +38,7 @@ const StageComponent = props => {
     const stageDimensions = getStageDimensions(stageSize, customStageSize, isFullScreen);
     const minWidth = getMinWidth(stageSize);
     const transformStyle = stageDimensions.width < minWidth && !isFullScreen ? {
-        transform: `translateX(${(minWidth - stageDimensions.width) / 2}px)`
+        transform: `translateX(${(minWidth - stageDimensions.width) / (isRtl ? -2 : 2)}px)`
     } : {};
 
     return (
@@ -48,7 +49,8 @@ const StageComponent = props => {
                     {[styles.withColorPicker]: !isFullScreen && isColorPicking})}
                 onDoubleClick={onDoubleClick}
                 style={isPlayerOnly ? null : {
-                    minWidth: `${minWidth}px`
+                    // add 2 because a 1px border is shown around each side of the stage
+                    minWidth: `${minWidth + 2}px`
                 }}
             >
                 <Box
@@ -70,6 +72,9 @@ const StageComponent = props => {
                         }}
                         {...boxProps}
                     />
+                    <Box className={styles.customOverlays}>
+                        <DOMElementRenderer domElement={props.overlay} />
+                    </Box>
                     <Box className={styles.monitorWrapper}>
                         <MonitorList
                             draggable={useEditorDragStyle}
@@ -148,13 +153,15 @@ StageComponent.propTypes = {
     canvas: PropTypes.instanceOf(Element).isRequired,
     customStageSize: PropTypes.shape({
         width: PropTypes.number,
-        height: PropTypes.height
+        height: PropTypes.number
     }),
+    overlay: PropTypes.instanceOf(Element).isRequired,
     colorInfo: Loupe.propTypes.colorInfo,
     dragRef: PropTypes.func,
     isColorPicking: PropTypes.bool,
     isFullScreen: PropTypes.bool.isRequired,
     isPlayerOnly: PropTypes.bool,
+    isRtl: PropTypes.bool,
     isStarted: PropTypes.bool,
     micIndicator: PropTypes.bool,
     onDeactivateColorPicker: PropTypes.func,

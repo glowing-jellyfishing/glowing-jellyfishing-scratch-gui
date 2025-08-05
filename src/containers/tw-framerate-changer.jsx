@@ -22,6 +22,7 @@ class FramerateChanger extends React.Component {
     }
     async changeFramerate (e) {
         if (e && (e.ctrlKey || e.shiftKey)) {
+            // prompt() returns Promise in desktop app
             // eslint-disable-next-line no-alert
             const newFPS = await prompt(this.props.intl.formatMessage(messages.newFramerate), this.props.framerate);
             if (newFPS === null) {

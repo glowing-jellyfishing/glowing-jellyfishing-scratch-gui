@@ -8,7 +8,7 @@ import {connect} from 'react-redux';
 import {STAGE_DISPLAY_SIZES} from '../lib/layout-constants';
 import {getEventXY} from '../lib/touch-utils';
 import VideoProvider from '../lib/video/video-provider';
-import {BitmapAdapter as V2BitmapAdapter} from 'scratch-svg-renderer';
+import {BitmapAdapter as V2BitmapAdapter} from '@turbowarp/scratch-svg-renderer';
 
 import StageComponent from '../components/stage/stage.jsx';
 
@@ -450,6 +450,7 @@ class Stage extends React.Component {
         return (
             <StageComponent
                 canvas={this.canvas}
+                overlay={this.props.vm.runtime.renderer.overlayContainer}
                 colorInfo={this.state.colorInfo}
                 dragRef={this.setDragCanvas}
                 question={this.state.question}
@@ -472,6 +473,7 @@ Stage.propTypes = {
     isColorPicking: PropTypes.bool,
     isFullScreen: PropTypes.bool.isRequired,
     isPlayerOnly: PropTypes.bool,
+    isRtl: PropTypes.bool,
     isWindowFullScreen: PropTypes.bool,
     dimensions: PropTypes.arrayOf(PropTypes.number),
     isStarted: PropTypes.bool,
@@ -498,6 +500,7 @@ const mapStateToProps = state => ({
     isColorPicking: state.scratchGui.colorPicker.active,
     isFullScreen: state.scratchGui.mode.isFullScreen || state.scratchGui.mode.isEmbedded,
     isPlayerOnly: state.scratchGui.mode.isPlayerOnly,
+    isRtl: state.locales.isRtl,
     isWindowFullScreen: state.scratchGui.tw.isWindowFullScreen,
     dimensions: state.scratchGui.tw.dimensions,
     isStarted: state.scratchGui.vmStatus.started,

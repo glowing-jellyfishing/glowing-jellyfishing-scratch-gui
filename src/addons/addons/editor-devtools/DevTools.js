@@ -148,6 +148,10 @@ export default class DevTools {
             callback: async () => {
               let wksp = this.getWorkspace();
               let v = wksp.getVariableById(this.selVarID);
+
+              // prompt() returns Promise in desktop app
+
+
               let varName = await window.prompt(this.msg("replace", { name: v.name }));
               if (varName) {
                 this.doReplaceVariable(this.selVarID, varName, v.type);
@@ -633,7 +637,7 @@ export default class DevTools {
 
     let ctrlKey = e.ctrlKey || e.metaKey;
 
-    if (e.keyCode === 37 && ctrlKey) {
+    if (e.key === "ArrowLeft" && ctrlKey) {
       // Ctrl + Left Arrow Key
       if (document.activeElement.tagName === "INPUT") {
         return;
@@ -647,7 +651,7 @@ export default class DevTools {
       }
     }
 
-    if (e.keyCode === 39 && ctrlKey) {
+    if (e.key === "ArrowRight" && ctrlKey) {
       // Ctrl + Right Arrow Key
       if (document.activeElement.tagName === "INPUT") {
         return;

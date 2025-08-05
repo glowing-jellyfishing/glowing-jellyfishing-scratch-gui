@@ -1,5 +1,6 @@
 import blockToImage from './block-to-image';
 import createThumbnail from './thumbnail';
+import {BLOCKS_DEFAULT_SCALE} from '../layout-constants';
 import {Base64} from 'js-base64';
 
 const codePayload = ({blockObjects, topBlockId}) => {
@@ -20,4 +21,37 @@ const codePayload = ({blockObjects, topBlockId}) => {
         });
 };
 
-export default codePayload;
+const findTopBlock = payload => {
+    const blocks = payload.extensionURLs ? payload.blocks : payload;
+    return blocks.find(i => i.topLevel);
+};
+
+const placeInViewport = (payload, workspaceMetrics, isRtl) => {
+    const topBlock = findTopBlock(payload);
+    if (topBlock) {
+        const {scrollX, scrollY, scale} = workspaceMetrics || {
+            scrollX: 0,
+            scrollY: 0,
+            scale: BLOCKS_DEFAULT_SCALE
+        };
+
+        const posY = -scrollY + 30;
+        let posX;
+        if (isRtl) {
+            posX = scrollX + 30;
+        } else {
+            posX = -scrollX + 30;
+        }
+
+        topBlock.x = posX / scale;
+        topBlock.y = posY / scale;
+    }
+
+    return payload;
+};
+
+export {
+    codePayload as default,
+    findTopBlock,
+    placeInViewport
+};

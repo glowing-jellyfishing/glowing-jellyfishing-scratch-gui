@@ -1,4 +1,4 @@
-import {FormattedMessage} from 'react-intl';
+import {FormattedMessage, intlShape, defineMessages} from 'react-intl';
 import PropTypes from 'prop-types';
 import React from 'react';
 
@@ -9,10 +9,43 @@ import classNames from 'classnames';
 
 import bluetoothIconURL from './bluetooth.svg';
 import internetConnectionIconURL from './internet-connection.svg';
+import favoriteInactiveIcon from './favorite-inactive.svg';
+import favoriteActiveIcon from './favorite-active.svg';
+
+const messages = defineMessages({
+    favorite: {
+        defaultMessage: 'Favorite',
+        description: 'Alt text of icon in costume, sound, and extension libraries to mark an item as favorite.',
+        id: 'tw.favorite'
+    },
+    unfavorite: {
+        defaultMessage: 'Unfavorite',
+        description: 'Alt text of icon in costume, sound, and extension libraries to unmark an item as favorite.',
+        id: 'tw.unfavorite'
+    }
+});
 
 /* eslint-disable react/prefer-stateless-function */
 class LibraryItemComponent extends React.PureComponent {
     render () {
+        const favoriteMessage = this.props.intl.formatMessage(
+            this.props.favorite ? messages.unfavorite : messages.favorite
+        );
+        const favorite = (
+            <button
+                className={classNames(styles.favoriteContainer, {[styles.active]: this.props.favorite})}
+                onClick={this.props.onFavorite}
+            >
+                <img
+                    src={this.props.favorite ? favoriteActiveIcon : favoriteInactiveIcon}
+                    className={styles.favoriteIcon}
+                    draggable={false}
+                    alt={favoriteMessage}
+                    title={favoriteMessage}
+                />
+            </button>
+        );
+
         return this.props.featured ? (
             <div
                 className={classNames(
@@ -38,6 +71,8 @@ class LibraryItemComponent extends React.PureComponent {
                     ) : null}
                     <img
                         className={styles.featuredImage}
+                        loading="lazy"
+                        draggable={false}
                         src={this.props.iconURL}
                     />
                 </div>
@@ -46,6 +81,7 @@ class LibraryItemComponent extends React.PureComponent {
                         <img
                             className={styles.libraryItemInsetImage}
                             src={this.props.insetIconURL}
+                            draggable={false}
                         />
                     </div>
                 ) : null}
@@ -58,6 +94,62 @@ class LibraryItemComponent extends React.PureComponent {
                     <br />
                     <span className={styles.featuredDescription}>{this.props.description}</span>
                 </div>
+
+                {(this.props.docsURI || this.props.samples) && (
+                    <div className={styles.extensionLinks}>
+                        {this.props.docsURI && (
+                            <a
+                                href={this.props.docsURI}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                <FormattedMessage
+                                    defaultMessage="Documentation"
+                                    // eslint-disable-next-line max-len
+                                    description="Appears in the extension list. Links to additional extension documentation."
+                                    id="tw.documentation"
+                                />
+                            </a>
+                        )}
+
+                        {this.props.samples && (
+                            <a
+                                href={this.props.samples[0].href}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                <FormattedMessage
+                                    defaultMessage="Sample project"
+                                    // eslint-disable-next-line max-len
+                                    description="Appears in the extension list. Links to a sample project for an extension."
+                                    id="tw.sample"
+                                />
+                            </a>
+                        )}
+                    </div>
+                )}
+
+                {this.props.credits && this.props.credits.length > 0 && (
+                    <div className={styles.extensionLinks}>
+                        <div>
+                            <FormattedMessage
+                                defaultMessage="Created by:"
+                                description="Appears in the extension list. Followed by a list of names."
+                                id="tw.createdBy"
+                            />
+                            {' '}
+                            {this.props.credits.map((credit, index) => (
+                                <React.Fragment key={index}>
+                                    {credit}
+                                    {index !== this.props.credits.length - 1 && (
+                                        ', '
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {this.props.bluetoothRequired || this.props.internetConnectionRequired || this.props.collaborator ? (
                     <div className={styles.featuredExtensionMetadata}>
                         <div className={styles.featuredExtensionRequirement}>
@@ -74,10 +166,16 @@ class LibraryItemComponent extends React.PureComponent {
                                         className={styles.featuredExtensionMetadataDetail}
                                     >
                                         {this.props.bluetoothRequired ? (
-                                            <img src={bluetoothIconURL} />
+                                            <img
+                                                src={bluetoothIconURL}
+                                                draggable={false}
+                                            />
                                         ) : null}
                                         {this.props.internetConnectionRequired ? (
-                                            <img src={internetConnectionIconURL} />
+                                            <img
+                                                src={internetConnectionIconURL}
+                                                draggable={false}
+                                            />
                                         ) : null}
                                     </div>
                                 </div>
@@ -103,16 +201,8 @@ class LibraryItemComponent extends React.PureComponent {
                         </div>
                     </div>
                 ) : null}
-                {this.props.incompatibleWithScratch && (
-                    <div className={styles.incompatibleWithScratch}>
-                        <FormattedMessage
-                            // eslint-disable-next-line max-len
-                            defaultMessage="Not compatible with Scratch."
-                            description="Warning that appears on extensions that won't work in Scratch."
-                            id="tw.extensions.incompatible"
-                        />
-                    </div>
-                )}
+
+                {favorite}
             </div>
         ) : (
             <Box
@@ -141,6 +231,7 @@ class LibraryItemComponent extends React.PureComponent {
                             className={styles.libraryItemImage}
                             loading="lazy"
                             src={this.props.iconURL}
+                            draggable={false}
                         />
                     </Box>
                 </Box>
@@ -152,6 +243,8 @@ class LibraryItemComponent extends React.PureComponent {
                         onStop={this.props.onStop}
                     />
                 ) : null}
+
+                {favorite}
             </Box>
         );
     }
@@ -160,6 +253,7 @@ class LibraryItemComponent extends React.PureComponent {
 
 
 LibraryItemComponent.propTypes = {
+    intl: intlShape,
     bluetoothRequired: PropTypes.bool,
     collaborator: PropTypes.string,
     description: PropTypes.oneOfType([
@@ -171,7 +265,6 @@ LibraryItemComponent.propTypes = {
     featured: PropTypes.bool,
     hidden: PropTypes.bool,
     iconURL: PropTypes.string,
-    incompatibleWithScratch: PropTypes.bool,
     insetIconURL: PropTypes.string,
     internetConnectionRequired: PropTypes.bool,
     isPlaying: PropTypes.bool,
@@ -179,6 +272,17 @@ LibraryItemComponent.propTypes = {
         PropTypes.string,
         PropTypes.node
     ]),
+    credits: PropTypes.arrayOf(PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.node
+    ])),
+    docsURI: PropTypes.string,
+    samples: PropTypes.arrayOf(PropTypes.shape({
+        href: PropTypes.string,
+        text: PropTypes.string
+    })),
+    favorite: PropTypes.bool,
+    onFavorite: PropTypes.func,
     onBlur: PropTypes.func.isRequired,
     onClick: PropTypes.func.isRequired,
     onFocus: PropTypes.func.isRequired,

@@ -21,6 +21,7 @@ import StageSelectorComponent from '../components/stage-selector/stage-selector.
 
 import {getBackdropLibrary} from '../lib/libraries/tw-async-libraries';
 import {handleFileUpload, costumeUpload} from '../lib/file-uploader.js';
+import {placeInViewport} from '../lib/backpack/code-payload.js';
 
 const dragTypes = [
     DragConstants.COSTUME,
@@ -145,8 +146,13 @@ class StageSelector extends React.Component {
             }, this.props.id);
         } else if (dragInfo.dragType === DragConstants.BACKPACK_CODE) {
             fetchCode(dragInfo.payload.bodyUrl)
-                .then(blocks => {
-                    this.props.vm.shareBlocksToTarget(blocks, this.props.id);
+                .then(payload => {
+                    const centered = placeInViewport(
+                        payload,
+                        this.props.workspaceMetrics.targets[this.props.id],
+                        this.props.isRtl
+                    );
+                    this.props.vm.shareBlocksToTarget(centered, this.props.id);
                     this.props.vm.refreshWorkspace();
                 });
         }
@@ -160,7 +166,9 @@ class StageSelector extends React.Component {
     render () {
         const componentProps = omit(this.props, [
             'asset', 'dispatchSetHoveredSprite', 'id', 'intl',
-            'onActivateTab', 'onSelect', 'onShowImporting', 'onCloseImporting']);
+            'onActivateTab', 'onSelect', 'onShowImporting', 'onCloseImporting',
+            'isRtl', 'workspaceMetrics'
+        ]);
         return (
             <DroppableThrottledStage
                 componentRef={this.setRef}
@@ -182,17 +190,23 @@ StageSelector.propTypes = {
     ...StageSelectorComponent.propTypes,
     id: PropTypes.string,
     intl: intlShape.isRequired,
+    isRtl: PropTypes.bool,
     onCloseImporting: PropTypes.func,
     onSelect: PropTypes.func,
-    onShowImporting: PropTypes.func
+    onShowImporting: PropTypes.func,
+    workspaceMetrics: PropTypes.shape({
+        targets: PropTypes.object
+    })
 };
 
 const mapStateToProps = (state, {asset, id}) => ({
+    isRtl: state.locales.isRtl,
     url: asset && asset.encodeDataURI(),
     vm: state.scratchGui.vm,
     receivedBlocks: state.scratchGui.hoveredTarget.receivedBlocks &&
             state.scratchGui.hoveredTarget.sprite === id,
-    raised: state.scratchGui.blockDrag
+    raised: state.scratchGui.blockDrag,
+    workspaceMetrics: state.scratchGui.workspaceMetrics
 });
 
 const mapDispatchToProps = dispatch => ({

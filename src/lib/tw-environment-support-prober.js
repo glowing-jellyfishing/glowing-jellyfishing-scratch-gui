@@ -1,28 +1,43 @@
 import Renderer from 'scratch-render';
 
-let _isRendererSupported = null;
+let cachedRendererSupport = null;
 export const isRendererSupported = () => {
-    if (_isRendererSupported === null) {
-        _isRendererSupported = Renderer.isSupported();
+    if (cachedRendererSupport === null) {
+        cachedRendererSupport = Renderer.isSupported();
     }
-    return _isRendererSupported;
+    return cachedRendererSupport;
 };
 
-let _canConstructNewFunctions = null;
-export const canConstructNewFunctions = () => {
-    if (_canConstructNewFunctions === null) {
+let cachedNewFunctionSupport = null;
+export const isNewFunctionSupported = () => {
+    if (cachedNewFunctionSupport === null) {
         try {
             // This will throw if blocked by CSP
             // eslint-disable-next-line no-new
             new Function('');
-            _canConstructNewFunctions = true;
+            cachedNewFunctionSupport = true;
         } catch (e) {
-            _canConstructNewFunctions = true;
+            cachedNewFunctionSupport = false;
         }
     }
-    return _canConstructNewFunctions;
+    return cachedNewFunctionSupport;
 };
 
-export const isAudioContextSupported = () => !!(window.AudioContext || window.webkitAudioContext);
+export const findIncompatibleUserscripts = () => {
+    /* eslint-disable max-len */
 
-export const isBrowserSupported = () => canConstructNewFunctions() && isAudioContextSupported();
+    // Chibi < v4 breaks extensionURLs in project.json
+    // Check suggested by SinanShiki
+    if (typeof window.chibi === 'object' && Number(window.chibi.version) <= 3) {
+        return ['You are using an old version of the "Chibi" userscript that has known project corruption bugs. Please disable it, uninstall it, or update to version 4.'];
+    }
+
+    /* eslint-enable max-len */
+    return [];
+};
+
+export const isBrowserSupported = () => (
+    isNewFunctionSupported() &&
+    isRendererSupported() &&
+    findIncompatibleUserscripts().length === 0
+);

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2021 Thomas Weber
+ * Copyright (C) 2021-2023 Thomas Weber
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -25,7 +25,6 @@ import settingsTranslationsEnglish from './en.json';
 import settingsTranslationsOther from './translations.json';
 import upstreamMeta from '../generated/upstream-meta.json';
 import {detectLocale} from '../../lib/detect-locale';
-import {getInitialDarkMode} from '../../lib/tw-theme-hoc.jsx';
 import SettingsStore from '../settings-store-singleton';
 import Channels from '../channels';
 import extensionImage from './icons/extension.svg';
@@ -33,8 +32,11 @@ import brushImage from './icons/brush.svg';
 import undoImage from './icons/undo.svg';
 import expandImageBlack from './icons/expand.svg';
 import infoImage from './icons/info.svg';
+import TWFancyCheckbox from '../../components/tw-fancy-checkbox/checkbox.jsx';
 import styles from './settings.css';
-import '../polyfill';
+import {detectTheme} from '../../lib/themes/themePersistance.js';
+import {applyGuiColors} from '../../lib/themes/guiHelpers.js';
+import {APP_NAME} from '../../lib/brand.js';
 import '../../lib/normalize.css';
 
 /* eslint-disable no-alert */
@@ -55,10 +57,9 @@ if (locale !== 'en') {
     }
 }
 
-document.title = `${settingsTranslations.title} - TurboWarp`;
-
-const theme = getInitialDarkMode() ? 'dark' : 'light';
-document.body.setAttribute('theme', theme);
+document.title = `${settingsTranslations.title} - ${APP_NAME}`;
+const theme = detectTheme();
+applyGuiColors(theme);
 
 let _throttleTimeout;
 const postThrottledSettingsChange = store => {
@@ -122,6 +123,27 @@ const groupAddons = () => {
     return groups;
 };
 const groupedAddons = groupAddons();
+
+const getInitialSearch = () => {
+    const hash = location.hash.substring(1);
+    
+    // If the query is an addon ID, it's a better user experience to show the name of the addon
+    // in the search bar instead of a ID they won't understand.
+    if (Object.prototype.hasOwnProperty.call(importedAddons, hash)) {
+        const manifest = importedAddons[hash];
+        return addonTranslations[`${hash}/@name`] || manifest.name;
+    }
+
+    return hash;
+};
+
+const clearHash = () => {
+    // Don't want to insert unnecssary history entry
+    // location.hash = ''; leaves a # in the URL
+    if (location.hash !== '') {
+        history.replaceState(null, null, `${location.pathname}${location.search}`);
+    }
+};
 
 const CreditList = ({credits}) => (
     credits.map((author, index) => {
@@ -337,6 +359,7 @@ const ResetButton = ({
         <img
             src={undoImage}
             alt={settingsTranslations.reset}
+            draggable={false}
         />
     </button>
 );
@@ -372,23 +395,38 @@ const Setting = ({
             {setting.type === 'boolean' && (
                 <React.Fragment>
                     {label}
-                    <input
+                    <TWFancyCheckbox
                         id={uniqueId}
-                        type="checkbox"
                         checked={value}
                         onChange={e => SettingsStore.setAddonSetting(addonId, settingId, e.target.checked)}
                     />
                 </React.Fragment>
             )}
-            {setting.type === 'integer' && (
+            {(setting.type === 'integer' || setting.type === 'positive_integer') && (
                 <React.Fragment>
                     {label}
                     <TextInput
                         id={uniqueId}
                         type="number"
-                        min={setting.min}
+                        min={setting.type === 'positive_integer' ? '0' : setting.min}
                         max={setting.max}
                         step="1"
+                        value={value}
+                        onChange={newValue => SettingsStore.setAddonSetting(addonId, settingId, newValue)}
+                    />
+                    <ResetButton
+                        addonId={addonId}
+                        settingId={settingId}
+                        forTextInput
+                    />
+                </React.Fragment>
+            )}
+            {(setting.type === 'string' || setting.type === 'untranslated') && (
+                <React.Fragment>
+                    {label}
+                    <TextInput
+                        id={uniqueId}
+                        type="text"
                         value={value}
                         onChange={newValue => SettingsStore.setAddonSetting(addonId, settingId, newValue)}
                     />
@@ -460,14 +498,12 @@ const Notice = ({
         className={styles.notice}
         type={type}
     >
-        <div>
-            <img
-                className={styles.noticeIcon}
-                src={infoImage}
-                alt=""
-                draggable={false}
-            />
-        </div>
+        <img
+            className={styles.noticeIcon}
+            src={infoImage}
+            alt=""
+            draggable={false}
+        />
         <div>
             {text}
         </div>
@@ -735,12 +771,16 @@ class AddonGroup extends React.Component {
                         });
                     }}
                 >
-                    <img
-                        className={styles.addonGroupExpand}
-                        src={expandImageBlack}
-                        data-open={this.state.open}
-                        alt=""
-                    />
+                    <div
+                        className={styles.addonGroupExpandContainer}
+                    >
+                        <img
+                            className={styles.addonGroupExpandIcon}
+                            src={expandImageBlack}
+                            data-open={this.state.open}
+                            alt=""
+                        />
+                    </div>
                     {this.props.label.replace('{number}', this.props.addons.length)}
                 </button>
                 {this.state.open && (
@@ -877,7 +917,7 @@ class AddonSettingsComponent extends React.Component {
         this.state = {
             loading: false,
             dirty: false,
-            search: location.hash ? location.hash.substr(1) : '',
+            search: getInitialSearch(),
             extended: false,
             ...this.readFullAddonState()
         };
@@ -891,6 +931,11 @@ class AddonSettingsComponent extends React.Component {
     componentDidMount () {
         SettingsStore.addEventListener('setting-changed', this.handleSettingStoreChanged);
         document.body.addEventListener('keydown', this.handleKeyDown);
+    }
+    componentDidUpdate (prevProps, prevState) {
+        if (this.state.search !== prevState.search) {
+            clearHash();
+        }
     }
     componentWillUnmount () {
         SettingsStore.removeEventListener('setting-changed', this.handleSettingStoreChanged);
@@ -1009,6 +1054,11 @@ class AddonSettingsComponent extends React.Component {
     }
     searchRef (searchBar) {
         this.searchBar = searchBar;
+
+        // Only focus search bar if we have no initial search
+        if (searchBar && this.state.search === '') {
+            searchBar.focus();
+        }
     }
     handleKeyDown (e) {
         const key = e.key;
@@ -1045,7 +1095,6 @@ class AddonSettingsComponent extends React.Component {
                                 aria-label={settingsTranslations.search}
                                 ref={this.searchRef}
                                 spellCheck="false"
-                                autoFocus
                             />
                             <div
                                 className={styles.searchButton}

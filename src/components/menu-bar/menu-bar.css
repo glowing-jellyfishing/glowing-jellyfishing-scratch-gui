@@ -7,6 +7,7 @@
     flex-direction: row;
     justify-content: space-between;
     flex-wrap: nowrap;
+    gap: 0.5rem;
 
     /*
         For most things, we shouldn't explicitly set height, and let the
@@ -27,11 +28,8 @@
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: $menu-bar-standard-font-size;
     font-weight: bold;
-    background-color: $motion-primary;
-    color: $ui-white;
-}
-[theme="dark"] .menu-bar {
-    background-color: $motion-primary-dark;
+    background-color: $menu-bar-background;
+    color: $menu-bar-foreground;
 }
 
 .main-menu {
@@ -41,8 +39,11 @@
     flex-wrap: nowrap;
     align-items: center;
     flex-grow: 1;
+    gap: 0.5rem;
 }
-
+.inactive {
+    opacity: 0;
+}
 .scratch-logo {
     height:  1.6rem;
     vertical-align: middle;
@@ -52,26 +53,9 @@
     cursor: pointer;
 }
 
-.language-icon {
-    height:  1.5rem;
-    vertical-align: middle;
-}
-
-.language-caret {
-    margin: 0 .125rem;
-}
-
-.language-menu {
-    box-sizing: border-box;
-    display: inline-flex;
-    width: $language-selector-width;
-}
-
 .menu-bar-item {
     display: flex;
-    padding: 0 0.25rem;
     text-decoration: none;
-    color: $ui-white;
     user-select: none;
     align-self: center;
     position: relative;
@@ -103,13 +87,10 @@
     display: flex;
     flex-direction: row;
     align-items: center;
+    gap: 0.5rem;
 }
 
 .file-group .menu-bar-item {
-    padding: 0 0.75rem;
-}
-
-.menu-bar-item.language-menu {
     padding: 0 0.5rem;
 }
 
@@ -119,20 +100,17 @@
 }
 
 .feedback-link {
-    color: $motion-primary !important;
+    color: $menu-bar-background;
     text-decoration: none;
-}
-[theme="dark"] .feedback-link {
-    color: $motion-primary-dark !important;
 }
 
 .feedback-button {
-    background-color: $ui-white;
+    background-color: white;
+    color: inherit;
     height: 34px;
 }
 
 .divider {
-    margin: 0 .5rem;
     height: 34px;
 }
 
@@ -164,6 +142,7 @@
 }
 
 .account-info-group .menu-bar-item {
+    margin: 0 .25rem;
     padding: 0 0.75rem;
 }
 
@@ -173,7 +152,11 @@
 }
 
 .help-icon {
-    margin-right: 0.35rem;
+    margin: 0 .25rem 0 0;
+}
+
+[dir="rtl"] .help-icon {
+    margin: 0 0 0 .25rem;
 }
 
 .account-nav-menu, .mystuff-button {
@@ -231,8 +214,21 @@
     vertical-align: middle;
 }
 
-/* tw: styles to override <a> styles */
+.collapsible-label {
+    margin: 0 .25rem;
+}
+
+@media only screen and (max-width: 1124px) {
+    .tutorials-label, .collapsible-label {
+        display: none;
+    }
+
+    .help-icon {
+        margin-right: 0;
+    }
+}
+
 .menu-item-link {
-    color: $ui-white !important;
+    color: inherit;
     text-decoration: none;
 }

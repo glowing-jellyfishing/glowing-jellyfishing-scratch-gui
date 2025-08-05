@@ -14,7 +14,12 @@ import {
     showAlertWithTimeout
 } from '../reducers/alerts';
 import {openUsernameModal} from '../reducers/modals';
-import {setUsernameInvalid} from '../reducers/tw';
+import {setUsernameInvalid, setCloudHost} from '../reducers/tw';
+
+/**
+ * TW: Our scratch-vm has an alternative fix to the cloud variable and video sensing privacy concerns.
+ */
+const DISABLE_WITH_VIDEO_SENSING = false;
 
 /*
  * Higher Order Component to manage the connection to the cloud server.
@@ -28,14 +33,20 @@ const cloudManagerHOC = function (WrappedComponent) {
             this.cloudProvider = null;
             bindAll(this, [
                 'handleCloudDataUpdate',
-                'onInvalidUsername'
+                'handleExtensionAdded'
             ]);
 
             this.props.vm.on('HAS_CLOUD_DATA_UPDATE', this.handleCloudDataUpdate);
+            this.props.vm.on('EXTENSION_ADDED', this.handleExtensionAdded);
         }
         componentDidMount () {
             if (this.shouldConnect(this.props)) {
                 this.connectToCloud();
+            }
+        }
+        componentWillReceiveProps (nextProps) {
+            if (this.props.reduxCloudHost !== nextProps.cloudHost) {
+                this.props.onSetReduxCloudHost(nextProps.cloudHost);
             }
         }
         componentDidUpdate (prevProps) {
@@ -43,7 +54,6 @@ const cloudManagerHOC = function (WrappedComponent) {
             // when loading a new project e.g. via file upload
             // (and eventually move it out of the vm.clear function)
 
-            // tw: handle cases where we should explicitly close and reconnect() in the same update
             if (this.shouldReconnect(this.props, prevProps)) {
                 this.disconnectFromCloud();
                 if (this.shouldConnect(this.props)) {
@@ -61,10 +71,18 @@ const cloudManagerHOC = function (WrappedComponent) {
             }
         }
         componentWillUnmount () {
+            this.props.vm.off('HAS_CLOUD_DATA_UPDATE', this.handleCloudDataUpdate);
+            this.props.vm.off('EXTENSION_ADDED', this.handleExtensionAdded);
             this.disconnectFromCloud();
         }
         canUseCloud (props) {
-            return !!(props.cloudHost && props.username && props.vm && props.projectId && props.hasCloudPermission);
+            return !!(
+                props.reduxCloudHost &&
+                props.username &&
+                props.vm &&
+                props.projectId &&
+                props.hasCloudPermission
+            );
         }
         shouldConnect (props) {
             return !this.isConnected() && this.canUseCloud(props) &&
@@ -83,17 +101,18 @@ const cloudManagerHOC = function (WrappedComponent) {
                     !props.canModifyCloudData
                 );
         }
-        // tw: handle cases where we should explicitly close and reconnect() in the same update
         shouldReconnect (props, prevProps) {
-            // reconnect when username changes
-            return this.isConnected() && props.username !== prevProps.username;
+            return this.isConnected() && (
+                props.username !== prevProps.username ||
+                props.reduxCloudHost !== prevProps.reduxCloudHost
+            );
         }
         isConnected () {
             return this.cloudProvider && !!this.cloudProvider.connection;
         }
         connectToCloud () {
             this.cloudProvider = new CloudProvider(
-                this.props.cloudHost,
+                this.props.reduxCloudHost,
                 this.props.vm,
                 this.props.username,
                 this.props.projectId);
@@ -115,14 +134,20 @@ const cloudManagerHOC = function (WrappedComponent) {
                 this.connectToCloud();
             }
         }
-        onInvalidUsername () {
-            this.props.onInvalidUsername();
+        handleExtensionAdded (categoryInfo) {
+            // Note that props.vm.extensionManager.isExtensionLoaded('videoSensing') is still false
+            // at the point of this callback, so it is difficult to reuse the canModifyCloudData logic.
+            if (DISABLE_WITH_VIDEO_SENSING && categoryInfo.id === 'videoSensing' && this.isConnected()) {
+                this.disconnectFromCloud();
+            }
         }
         render () {
             const {
                 /* eslint-disable no-unused-vars */
                 canModifyCloudData,
                 cloudHost,
+                reduxCloudHost,
+                onSetReduxCloudHost,
                 projectId,
                 username,
                 hasCloudPermission,
@@ -146,6 +171,8 @@ const cloudManagerHOC = function (WrappedComponent) {
     CloudManager.propTypes = {
         canModifyCloudData: PropTypes.bool.isRequired,
         cloudHost: PropTypes.string,
+        reduxCloudHost: PropTypes.string,
+        onSetReduxCloudHost: PropTypes.func,
         hasCloudPermission: PropTypes.bool,
         isShowingWithId: PropTypes.bool.isRequired,
         onInvalidUsername: PropTypes.func,
@@ -164,15 +191,18 @@ const cloudManagerHOC = function (WrappedComponent) {
     const mapStateToProps = (state, ownProps) => {
         const loadingState = state.scratchGui.projectState.loadingState;
         return {
+            reduxCloudHost: state.scratchGui.tw.cloudHost,
             isShowingWithId: getIsShowingWithId(loadingState),
             projectId: state.scratchGui.projectState.projectId,
-            hasCloudPermission: state.scratchGui.tw ? state.scratchGui.tw.cloud : false,
-            username: state.scratchGui.tw ? state.scratchGui.tw.username : '',
-            canModifyCloudData: (!state.scratchGui.mode.hasEverEnteredEditor || ownProps.canSave)
+            // if you're editing someone else's project, you can't modify cloud data
+            canModifyCloudData: (!state.scratchGui.mode.hasEverEnteredEditor || ownProps.canSave) &&
+                // possible security concern if the program attempts to encode webcam data over cloud variables
+                !(DISABLE_WITH_VIDEO_SENSING && ownProps.vm.extensionManager.isExtensionLoaded('videoSensing'))
         };
     };
 
     const mapDispatchToProps = dispatch => ({
+        onSetReduxCloudHost: cloudHost => dispatch(setCloudHost(cloudHost)),
         onShowCloudInfo: () => showAlertWithTimeout(dispatch, 'cloudInfo'),
         onInvalidUsername: () => {
             dispatch(setUsernameInvalid(true));

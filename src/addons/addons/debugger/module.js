@@ -1,11 +1,13 @@
 import EventTarget from "../../event-target.js"; /* inserted by pull.js */
 
-// https://github.com/LLK/scratch-vm/blob/bb352913b57991713a5ccf0b611fda91056e14ec/src/engine/thread.js#L198
+// https://github.com/scratchfoundation/scratch-vm/blob/bb352913b57991713a5ccf0b611fda91056e14ec/src/engine/thread.js#L198
 const STATUS_RUNNING = 0;
 const STATUS_PROMISE_WAIT = 1;
 const STATUS_YIELD = 2;
 const STATUS_YIELD_TICK = 3;
 const STATUS_DONE = 4;
+
+const REACT_INTERNAL_PREFIX = "__reactInternalInstance$";
 
 let vm;
 
@@ -148,7 +150,7 @@ export const onSingleStep = (listener) => {
 export const getRunningThread = () => steppingThread;
 
 // A modified version of this function
-// https://github.com/LLK/scratch-vm/blob/0e86a78a00db41af114df64255e2cd7dd881329f/src/engine/sequencer.js#L179
+// https://github.com/scratchfoundation/scratch-vm/blob/0e86a78a00db41af114df64255e2cd7dd881329f/src/engine/sequencer.js#L179
 // Returns if we should continue executing this thread.
 const singleStepThread = (thread) => {
   if (thread.status === STATUS_DONE) {
@@ -177,7 +179,7 @@ const singleStepThread = (thread) => {
     have access to that method, so we need to force the original stepThread to run
     execute for us then exit before it tries to run more blocks.
     So, we make `thread.blockGlowInFrame = ...` throw an exception, so this line:
-    https://github.com/LLK/scratch-vm/blob/bb352913b57991713a5ccf0b611fda91056e14ec/src/engine/sequencer.js#L214
+    https://github.com/scratchfoundation/scratch-vm/blob/bb352913b57991713a5ccf0b611fda91056e14ec/src/engine/sequencer.js#L214
     will end the function early. We then have to set it back to normal afterward.
 
     Why are we here just to suffer?
@@ -363,12 +365,12 @@ export const singleStep = () => {
   eventTarget.dispatchEvent(new CustomEvent("step"));
 };
 
-export const setup = (_vm) => {
+export const setup = (addon) => {
   if (vm) {
     return;
   }
 
-  vm = _vm;
+  vm = addon.tab.traps.vm;
 
   const originalStepThreads = vm.runtime.sequencer.stepThreads;
   vm.runtime.sequencer.stepThreads = function () {

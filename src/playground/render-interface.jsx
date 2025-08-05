@@ -26,10 +26,8 @@ import AppStateHOC from '../lib/app-state-hoc.jsx';
 import ErrorBoundaryHOC from '../lib/error-boundary-hoc.jsx';
 import TWProjectMetaFetcherHOC from '../lib/tw-project-meta-fetcher-hoc.jsx';
 import TWStateManagerHOC from '../lib/tw-state-manager-hoc.jsx';
-import TWThemeHOC from '../lib/tw-theme-hoc.jsx';
 import SBFileUploaderHOC from '../lib/sb-file-uploader-hoc.jsx';
 import TWPackagerIntegrationHOC from '../lib/tw-packager-integration-hoc.jsx';
-import TWRestorePointHOC from '../lib/tw-restore-point-hoc.jsx';
 import SettingsStore from '../addons/settings-store-singleton';
 import '../lib/tw-fix-history-api';
 import GUI from './render-gui.jsx';
@@ -37,19 +35,19 @@ import MenuBar from '../components/menu-bar/menu-bar.jsx';
 import ProjectInput from '../components/tw-project-input/project-input.jsx';
 import FeaturedProjects from '../components/tw-featured-projects/featured-projects.jsx';
 import Description from '../components/tw-description/description.jsx';
-import WebGlModal from '../containers/webgl-modal.jsx';
 import BrowserModal from '../components/browser-modal/browser-modal.jsx';
-import CloudVariableBadge from '../components/tw-cloud-variable-badge/cloud-variable-badge.jsx';
-import {isRendererSupported, isBrowserSupported} from '../lib/tw-environment-support-prober';
+import CloudVariableBadge from '../containers/tw-cloud-variable-badge.jsx';
+import {isBrowserSupported} from '../lib/tw-environment-support-prober';
 import AddonChannels from '../addons/channels';
 import {loadServiceWorker} from './load-service-worker';
 import runAddons from '../addons/entry';
+import {APP_NAME} from '../lib/brand.js';
 
 import styles from './interface.css';
 
 if (window.parent !== window) {
     // eslint-disable-next-line no-alert
-    alert('This page contains an invalid TurboWarp embed. Please read https://docs.turbowarp.org/embedding for instructions to create a working embed.');
+    alert(`This page contains an invalid ${APP_NAME} embed. Please read https://docs.turbowarp.org/embedding for instructions to create a working embed.`);
     throw new Error('Invalid embed');
 }
 
@@ -60,9 +58,11 @@ if (process.env.ANNOUNCEMENT) {
     announcement.innerHTML = process.env.ANNOUNCEMENT;
 }
 
-const handleClickAddonSettings = () => {
+const handleClickAddonSettings = addonId => {
+    // addonId might be a string of the addon to focus on, undefined, or an event (treat like undefined)
     const path = process.env.ROUTING_STYLE === 'wildcard' ? 'addons' : 'addons.html';
-    window.open(`${process.env.ROOT}${path}`);
+    const url = `${process.env.ROOT}${path}${typeof addonId === 'string' ? `#${addonId}` : ''}`;
+    window.open(url);
 };
 
 const messages = defineMessages({
@@ -191,9 +191,9 @@ class Interface extends React.Component {
     }
     handleUpdateProjectTitle (title, isDefault) {
         if (isDefault || !title) {
-            document.title = `TurboWarp - ${this.props.intl.formatMessage(messages.defaultTitle)}`;
+            document.title = `${APP_NAME} - ${this.props.intl.formatMessage(messages.defaultTitle)}`;
         } else {
-            document.title = `${title} - TurboWarp`;
+            document.title = `${title} - ${APP_NAME}`;
         }
     }
     render () {
@@ -206,7 +206,6 @@ class Interface extends React.Component {
             isLoading,
             isPlayerOnly,
             isRtl,
-            onClickTheme,
             projectId,
             /* eslint-enable no-unused-vars */
             ...props
@@ -225,23 +224,22 @@ class Interface extends React.Component {
                         <WrappedMenuBar
                             canChangeLanguage
                             canManageFiles
+                            canChangeTheme
                             enableSeeInside
                             onClickAddonSettings={handleClickAddonSettings}
-                            onClickTheme={onClickTheme}
                         />
                     </div>
                 ) : null}
                 <div
                     className={styles.center}
                     style={isPlayerOnly ? ({
-                        // add a couple pixels to account for border (TODO: remove weird hack)
+                        // + 2 accounts for 1px border on each side of the stage
                         width: `${Math.max(480, props.customStageSize.width) + 2}px`
                     }) : null}
                 >
                     {isHomepage && announcement ? <DOMElementRenderer domElement={announcement} /> : null}
                     <GUI
                         onClickAddonSettings={handleClickAddonSettings}
-                        onClickTheme={onClickTheme}
                         onUpdateProjectTitle={this.handleUpdateProjectTitle}
                         backpackVisible
                         backpackHost="_local_"
@@ -249,9 +247,6 @@ class Interface extends React.Component {
                     />
                     {isHomepage ? (
                         <React.Fragment>
-                            {isRendererSupported() ? null : (
-                                <WebGlModal isRtl={isRtl} />
-                            )}
                             {isBrowserSupported() ? null : (
                                 <BrowserModal isRtl={isRtl} />
                             )}
@@ -262,7 +257,7 @@ class Interface extends React.Component {
                                 // eslint-disable-next-line max-len
                                 description.instructions === 'unshared' || description.credits === 'unshared'
                             ) && (
-                                <div className={styles.unsharedUpdate}>
+                                <div className={classNames(styles.infobox, styles.unsharedUpdate)}>
                                     <p>
                                         <FormattedMessage
                                             defaultMessage="Unshared projects are no longer visible."
@@ -324,9 +319,12 @@ class Interface extends React.Component {
                                 <p>
                                     <FormattedMessage
                                         // eslint-disable-next-line max-len
-                                        defaultMessage="TurboWarp is a Scratch mod that compiles projects to JavaScript to make them run really fast. Try it out by inputting a project ID or URL above or choosing a featured project below."
-                                        description="Description of TurboWarp"
+                                        defaultMessage="{APP_NAME} is a Scratch mod that compiles projects to JavaScript to make them run really fast. Try it out by inputting a project ID or URL above or choosing a featured project below."
+                                        description="Description of TurboWarp on the homepage"
                                         id="tw.home.description"
+                                        values={{
+                                            APP_NAME
+                                        }}
                                     />
                                 </p>
                             </div>
@@ -357,7 +355,6 @@ Interface.propTypes = {
     isLoading: PropTypes.bool,
     isPlayerOnly: PropTypes.bool,
     isRtl: PropTypes.bool,
-    onClickTheme: PropTypes.func,
     projectId: PropTypes.string
 };
 
@@ -384,8 +381,6 @@ const WrappedInterface = compose(
     ErrorBoundaryHOC('TW Interface'),
     TWProjectMetaFetcherHOC,
     TWStateManagerHOC,
-    TWThemeHOC,
-    TWRestorePointHOC,
     TWPackagerIntegrationHOC
 )(ConnectedInterface);
 

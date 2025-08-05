@@ -19,7 +19,7 @@ import upstreamMeta from './generated/upstream-meta.json';
 import EventTargetShim from './event-target';
 
 const SETTINGS_KEY = 'tw:addons';
-const VERSION = 4;
+const VERSION = 5;
 
 const migrateSettings = settings => {
     const oldVersion = settings._;
@@ -77,6 +77,21 @@ const migrateSettings = settings => {
         }
     }
 
+    // Migrate 4 -> 5
+    // fullscreen's hideToolbar and hoverToolbar settings were merged into one toolbar setting
+    if (oldVersion < 5) {
+        const fullscreen = settings.fullscreen;
+        // hideToolbar was false by default
+        // hoverToolbar was true by default
+        if (fullscreen && fullscreen.hideToolbar) {
+            if (fullscreen.hoverToolbar === false) {
+                fullscreen.toolbar = 'hide';
+            } else {
+                fullscreen.toolbar = 'hover';
+            }
+        }
+    }
+
     return settings;
 };
 
@@ -119,7 +134,7 @@ class SettingsStore extends EventTargetShim {
                 if (result && typeof result === 'object') {
                     result = migrateSettings(result);
                     for (const key of Object.keys(result)) {
-                        if (base.hasOwnProperty(key)) {
+                        if (Object.prototype.hasOwnProperty.call(base, key)) {
                             const value = result[key];
                             if (value && typeof value === 'object') {
                                 base[key] = value;
@@ -198,7 +213,7 @@ class SettingsStore extends EventTargetShim {
             return false;
         }
         const storage = this.getAddonStorage(addonId);
-        if (storage.hasOwnProperty('enabled')) {
+        if (Object.prototype.hasOwnProperty.call(storage, 'enabled')) {
             return storage.enabled;
         }
         return !!manifest.enabledByDefault;
@@ -211,7 +226,7 @@ class SettingsStore extends EventTargetShim {
         if (!settingObject) {
             throw new Error(`Unknown setting: ${settingId}`);
         }
-        if (storage.hasOwnProperty(settingId)) {
+        if (Object.prototype.hasOwnProperty.call(storage, settingId)) {
             return storage[settingId];
         }
         return settingObject.default;
@@ -270,10 +285,12 @@ class SettingsStore extends EventTargetShim {
                 if (typeof value !== 'boolean') {
                     throw new Error('Setting value is invalid.');
                 }
-            } else if (settingObject.type === 'integer') {
+            } else if (settingObject.type === 'integer' || settingObject.type === 'positive_integer') {
                 if (typeof value !== 'number') {
                     throw new Error('Setting value is invalid.');
                 }
+            } else if (settingObject.type === 'string' || settingObject.type === 'untranslated') {
+                // always valid
             } else if (settingObject.type === 'color') {
                 if (typeof value !== 'string') {
                     throw new Error('Color value is not a string.');
@@ -365,7 +382,7 @@ class SettingsStore extends EventTargetShim {
         const result = {
             core: {
                 // Upstream property. We don't use this.
-                lightTheme: theme === 'light',
+                lightTheme: !theme.isDark(),
                 // Doesn't matter what we set this to
                 version: `v1.0.0-tw-${upstreamMeta.commit}`
             },
@@ -389,7 +406,7 @@ class SettingsStore extends EventTargetShim {
 
     import (data) {
         for (const [addonId, value] of Object.entries(data.addons)) {
-            if (!addons.hasOwnProperty(addonId)) {
+            if (!Object.prototype.hasOwnProperty.call(addons, addonId)) {
                 continue;
             }
             const {enabled, settings} = value;
@@ -463,7 +480,9 @@ class SettingsStore extends EventTargetShim {
         if (condition.settings) {
             // settings is an AND
             for (const [settingName, expectedValue] of Object.entries(condition.settings)) {
-                if (this.getAddonSetting(addonId, settingName) !== expectedValue) {
+                // expectedValue can be a string or an array of possible options
+                const expectedValues = Array.isArray(expectedValue) ? expectedValue : [expectedValue];
+                if (!expectedValues.includes(this.getAddonSetting(addonId, settingName))) {
                     return false;
                 }
             }

@@ -26,8 +26,12 @@ const StageWrapperComponent = function (props) {
         <Box
             className={classNames(
                 styles.stageWrapper,
-                {[styles.embedded]: isEmbedded},
-                {[styles.fullScreen]: isFullScreen},
+                {
+                    [styles.embedded]: isEmbedded,
+                    [styles.fullScreen]: isFullScreen,
+                    [styles.loading]: loading,
+                    [styles.offsetControls]: !(isEmbedded || isFullScreen)
+                }
             )}
             dir={isRtl ? 'rtl' : 'ltr'}
         >
