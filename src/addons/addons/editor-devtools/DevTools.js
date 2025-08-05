@@ -148,7 +148,10 @@ export default class DevTools {
             callback: async () => {
               let wksp = this.getWorkspace();
               let v = wksp.getVariableById(this.selVarID);
+
               // prompt() returns Promise in desktop app
+
+
               let varName = await window.prompt(this.msg("replace", { name: v.name }));
               if (varName) {
                 this.doReplaceVariable(this.selVarID, varName, v.type);

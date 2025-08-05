@@ -911,6 +911,15 @@ class AddonRunner {
         const baseStylePrecedence = getPrecedence(this.id) * 100;
 
         if (this.manifest.userstyles) {
+
+            for (const userstyle of this.manifest.userstyles) {
+                for (const [moduleId, cssText] of this.resources[userstyle.url]) {
+                    const sheet = ConditionalStyle.get(moduleId, cssText);
+                    sheet.addDependent(
+                        this.id,
+                        () => !this.publicAPI.addon.self.disabled && this.meetsCondition(userstyle.if)
+                    );
+
             for (let i = 0; i < this.manifest.userstyles.length; i++) {
                 const userstyle = this.manifest.userstyles[i];
                 const userstylePrecedence = baseStylePrecedence + i;
@@ -922,6 +931,7 @@ class AddonRunner {
                 for (const [moduleId, cssText] of this.resources[userstyle.url]) {
                     const sheet = conditionalStyles.create(moduleId, cssText);
                     sheet.addDependent(this.id, userstylePrecedence, userstyleCondition);
+
                 }
             }
 

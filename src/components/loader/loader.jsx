@@ -10,6 +10,17 @@ import topBlock from './top-block.svg';
 import middleBlock from './middle-block.svg';
 import bottomBlock from './bottom-block.svg';
 
+// tw:
+// we make some rather large changes here:
+//  - remove random message, replaced with message dependent on what is actually being loaded
+//  - add a progress bar
+//  - bring in intl so that we can translate everything
+// The way of doing this is extremely unusual and weird compared to how things are typically done for performance.
+// This is because react updates are too performance crippling to handle the progress bar rapidly updating.
+
+// tw:
+// progress bar logic removed entirely as it is unneeded in desktop build
+
 const mainMessages = {
     'gui.loader.headline': (
         <FormattedMessage
@@ -55,6 +66,9 @@ class LoaderComponent extends React.Component {
             'handleAssetProgress',
             'handleProjectLoaded',
             'barInnerRef',
+
+        this._state = 0;
+        bindAll(this, [
             'messageRef'
         ]);
         this.barInnerEl = null;
@@ -94,6 +108,20 @@ class LoaderComponent extends React.Component {
     handleProjectLoaded () {
         if (this.ignoreProgress || !this.barInnerEl || !this.messageEl) {
             return;
+        this.updateMessage();
+    }
+    updateMessage () {
+        if (this._state === 0) {
+            this.message.textContent = this.props.intl.formatMessage(messages.generic);
+        } else if (this._state === 1) {
+            this.message.textContent = this.props.intl.formatMessage(messages.projectData);
+        } else if (this.total > 0) {
+            this.message.textContent = this.props.intl.formatMessage(messages.assetsKnown, {
+                complete: this.complete,
+                total: this.total
+            });
+        } else {
+            this.message.textContent = this.props.intl.formatMessage(messages.assetsUnknown);
         }
 
         this.ignoreProgress = true;
@@ -104,6 +132,8 @@ class LoaderComponent extends React.Component {
     }
     messageRef (message) {
         this.messageEl = message;
+    messageRef (element) {
+        this.message = element;
     }
     render () {
         return (
@@ -144,6 +174,10 @@ class LoaderComponent extends React.Component {
                         <div
                             className={styles.barInner}
                             ref={this.barInnerRef}
+                    <div className={styles.messageContainerOuter}>
+                        <div
+                            className={styles.messageContainerInner}
+                            ref={this.messageRef}
                         />
                     </div>
                 </div>

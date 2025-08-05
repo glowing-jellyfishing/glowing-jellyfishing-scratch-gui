@@ -1,5 +1,6 @@
 {
   "name": "scratch-gui",
+
   "version": "3.2.37",
   "description": "Graphical User Interface for creating and running Scratch 3.0 projects",
   "author": "Massachusetts Institute of Technology",
@@ -10,6 +11,11 @@
     "url": "https://github.com/LLK/scratch-gui.git"
   },
   "main": "./dist/scratch-gui.js",
+
+  "version": "0.1.0",
+  "description": "GraphicaL User Interface for creating and running Scratch 3.0 projects",
+  "main": "./dist/js/scratch-gui.js",
+
   "scripts": {
     "build": "npm run clean && webpack --colors --bail",
     "clean": "rimraf ./build && mkdirp build && rimraf ./dist && mkdirp dist",

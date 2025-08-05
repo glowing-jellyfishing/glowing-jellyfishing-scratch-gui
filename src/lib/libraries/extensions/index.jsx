@@ -51,6 +51,34 @@ import customExtensionIcon from './custom/custom.svg';
 import returnIcon from './custom/return.svg';
 import galleryIcon from './gallery/gallery.svg';
 import {APP_NAME} from '../../brand';
+import animatedTextIcon from './gallery/animated-text.svg';
+import stretchIcon from './gallery/stretch.svg';
+import gamepadIcon from './gallery/gamepad.svg';
+import cursorIcon from './gallery/cursor.svg';
+import filesIcon from './gallery/files.svg';
+import pointerlockIcon from './gallery/pointerlock.svg';
+import runtimeOptionsIcon from './gallery/runtime-options.svg';
+import utilitiesIcon from './gallery/utilities.svg';
+import sensingPlusIcon from './gallery/sensingplus.svg';
+import clonesPlusIcon from './gallery/clonesplus.svg';
+import looksPlusIcon from './gallery/looksplus.svg';
+import clippingBlendingIcon from './gallery/clippingblending.svg';
+import regexIcon from './gallery/regex.svg';
+import bitwiseIcon from './gallery/bitwise.svg';
+import textIcon from './gallery/text.svg';
+import fetchIcon from './gallery/fetch.svg';
+import box2dIcon from './gallery/box2d.svg';
+import localStorageIcon from './gallery/local-storage.svg';
+import bigIntIcon from './gallery/bigint.svg';
+import jsonIcon from './gallery/json.svg';
+import returnIcon from './custom/return.svg';
+
+const galleryItem = object => ({
+    ...object,
+    tags: ['tw'],
+    incompatibleWithScratch: true,
+    featured: true
+});
 
 export default [
     {
@@ -337,6 +365,27 @@ export default [
     },
     {
         // not really an extension, but it's easiest to present it as one
+        name: (
+            <FormattedMessage
+                defaultMessage="Custom Reporters"
+                description="Name of custom reporters extension"
+                id="tw.customReporters.name"
+            />
+        ),
+        extensionId: 'procedures_enable_return',
+        iconURL: returnIcon,
+        description: (
+            <FormattedMessage
+                defaultMessage="Allow custom blocks to output values and be used as inputs."
+                description="Description of custom reporters extension"
+                id="tw.customReporters.description"
+            />
+        ),
+        tags: ['tw'],
+        incompatibleWithScratch: true,
+        featured: true
+    },
+    {
         name: (
             <FormattedMessage
                 defaultMessage="Custom Reporters"

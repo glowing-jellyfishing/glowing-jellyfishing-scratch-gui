@@ -57,6 +57,10 @@ const UsernameModalComponent = props => (
                     />
                 </p>
             ) : null}
+
+            <p>
+                {'New username:'}
+            </p>
             <Box>
                 <input
                     autoFocus

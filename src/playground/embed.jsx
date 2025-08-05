@@ -5,6 +5,8 @@ import {compose} from 'redux';
 import AppStateHOC from '../lib/app-state-hoc.jsx';
 import TWEmbedFullScreenHOC from '../lib/tw-embed-fullscreen-hoc.jsx';
 import TWStateManagerHOC from '../lib/tw-state-manager-hoc.jsx';
+import TWFullscreenResizerHOC from '../lib/tw-fullscreen-resizer-hoc.jsx';
+import setupPostMessageAPI from '../lib/tw-postmessage-api';
 import runAddons from '../addons/entry';
 import {Theme} from '../lib/themes/index.js';
 
@@ -37,6 +39,12 @@ const onVmInit = _vm => {
 };
 
 const onProjectLoaded = () => {
+    const urlParams = new URLSearchParams(location.search);
+
+    if (urlParams.has('api')) {
+        setupPostMessageAPI(vm);
+    }
+
     if (urlParams.has('autoplay')) {
         vm.start();
         vm.greenFlag();

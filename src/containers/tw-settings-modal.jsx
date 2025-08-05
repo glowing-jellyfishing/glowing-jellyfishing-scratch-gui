@@ -40,6 +40,8 @@ class UsernameModal extends React.Component {
         // prompt() returns Promise in desktop app
         // eslint-disable-next-line no-alert
         const newFramerate = await prompt(this.props.intl.formatMessage(messages.newFramerate), this.props.framerate);
+        // eslint-disable-next-line no-alert
+        const newFramerate = +await prompt(this.props.intl.formatMessage(messages.newFramerate), this.props.framerate);
         const parsed = parseFloat(newFramerate);
         if (isFinite(parsed)) {
             this.props.vm.setFramerate(parsed);

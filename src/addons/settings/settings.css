@@ -29,6 +29,10 @@ a[href] {
     text-decoration: underline;
 }
 a:active, a:focus {
+[theme="dark"] a[href] {
+    color: #6d9bff;
+}
+a[href]:active, a[href]:focus {
     outline: none;
     box-shadow: 0 0 0 3px $looks-transparent;
 }

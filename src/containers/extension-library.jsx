@@ -129,7 +129,16 @@ class ExtensionLibrary extends React.PureComponent {
         const extensionId = item.extensionId;
 
         if (extensionId === 'custom_extension') {
+        // Don't warn about Scratch compatibility before showing modal
+        const isCustomURL = !item.disabled && !extensionId;
+        if (isCustomURL) {
             this.props.onOpenCustomExtensionModal();
+            return;
+        }
+
+        if (extensionId === 'procedures_enable_return') {
+            this.props.onEnableProcedureReturns();
+            this.props.onCategorySelected('myBlocks');
             return;
         }
 
