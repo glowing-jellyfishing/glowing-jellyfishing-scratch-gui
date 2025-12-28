@@ -14,6 +14,17 @@ const fromHardcoded = ({userId, username, name}) => ({
     text: name || username
 });
 
+const donators = [
+    {
+        userId: '1882674',
+        username: 'griffpatch'
+    },
+    {
+        userId: '4648559',
+        username: 'World_Languages'
+    }
+].map(fromHardcoded);
+
 const addonDevelopers = [
     {
         userId: '34018398',
@@ -100,5 +111,6 @@ const addonDevelopers = [
 ].map(fromHardcoded);
 
 export default {
+    donators: shuffle(donators),
     addonDevelopers: shuffle(addonDevelopers)
 };

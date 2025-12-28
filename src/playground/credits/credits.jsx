@@ -73,7 +73,12 @@ const Credits = () => (
             </p>
         </section>
         <section>
-            <h2>Addons</h2>
+            <h2>Donators</h2>
+            <p>Users who have donated to the TurboWarp project <a href="https://github.com/sponsors/GarboMuffin">on GitHub Sponsors</a>.</p>
+            <UserList users={UserData.donators} />
+        </section>
+        <section>
+            <h2>Addon contributors</h2>
             <UserList users={UserData.addonDevelopers} />
         </section>
         <section>
