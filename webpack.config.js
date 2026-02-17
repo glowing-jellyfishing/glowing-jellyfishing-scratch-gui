@@ -129,10 +129,18 @@ module.exports = [
             rules: base.module.rules.concat([
                 {
                     test: /\.(svg|png|wav|gif|jpg|mp3|ttf|otf)$/,
-                    loader: 'file-loader',
-                    options: {
-                        outputPath: 'static/assets/'
-                    }
+                    use: [
+                        {
+                            loader: 'url-loader',
+                            options: {
+                                limit: 1024,
+                                // css images break if esModule: true
+                                esModule: false,
+                                fallback: 'file-loader',
+                                outputPath: 'static/assets/'
+                            }
+                        }
+                    ]
                 }
             ])
         },
